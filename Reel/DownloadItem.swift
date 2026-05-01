@@ -43,6 +43,7 @@ class DownloadItem: ObservableObject, Identifiable {
     @Published var eta: String = ""
     @Published var filePath: String?
     var process: Process?
+    var errorLines: [String] = []
 
     init(url: String, format: DownloadFormat) {
         self.url = url

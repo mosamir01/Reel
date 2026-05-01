@@ -142,10 +142,14 @@ class DownloadManager: ObservableObject {
         switch item.status {
         case .done, .failed: break
         default:
-            item.status = process.terminationStatus == 0
-                ? .done
-                : .failed("Failed (exit \(process.terminationStatus))")
-            if process.terminationStatus == 0 { item.progress = 1.0 }
+            if process.terminationStatus == 0 {
+                item.status = .done
+                item.progress = 1.0
+            } else {
+                let msg = item.errorLines.last
+                    ?? "Download failed. Make sure the URL is valid and yt-dlp is up to date."
+                item.status = .failed(msg)
+            }
         }
 
         item.process = nil
@@ -182,6 +186,10 @@ class DownloadManager: ObservableObject {
         if line.contains("has already been downloaded") { item.status = .done; item.progress = 1 }
         // ffmpeg post-process
         if line.hasPrefix("[ffmpeg]") { item.status = .converting; item.progress = 0.99 }
+        // Collect error lines for better failure messages
+        if line.hasPrefix("ERROR:") || line.contains("not find ffmpeg") || line.contains("ffmpeg not found") {
+            item.errorLines.append(line.replacingOccurrences(of: "ERROR: ", with: ""))
+        }
     }
 
     private func formatArgs(for format: DownloadFormat, hasFFmpeg: Bool) -> [String] {
@@ -201,9 +209,18 @@ class DownloadManager: ObservableObject {
                 return ["-f", "best[ext=mp4]/best[vcodec!=none][acodec!=none]/best"]
             }
         case .mp3:
-            return ["-x", "--audio-format", "mp3", "--audio-quality", "0"]
+            // MP3 conversion requires ffmpeg; without it, download best audio as-is (m4a/opus)
+            if hasFFmpeg {
+                return ["-x", "--audio-format", "mp3", "--audio-quality", "0"]
+            } else {
+                return ["-f", "bestaudio[ext=m4a]/bestaudio", "-x"]
+            }
         case .wav:
-            return ["-x", "--audio-format", "wav"]
+            if hasFFmpeg {
+                return ["-x", "--audio-format", "wav"]
+            } else {
+                return ["-f", "bestaudio[ext=m4a]/bestaudio", "-x"]
+            }
         }
     }
 
