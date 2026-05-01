@@ -1,0 +1,56 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+/* Begin PBXBuildFile section */
+		AA01={isa=PBXBuildFile;fileRef=FA01;};
+		AA02={isa=PBXBuildFile;fileRef=FA02;};
+		AA03={isa=PBXBuildFile;fileRef=FA03;};
+		AA04={isa=PBXBuildFile;fileRef=FA04;};
+		AA10={isa=PBXBuildFile;fileRef=FA10;};
+		AA11={isa=PBXBuildFile;fileRef=FA11;};
+/* End PBXBuildFile section */
+/* Begin PBXFileReference section */
+		FA01={isa=PBXFileReference;lastKnownFileType=sourcecode.swift;path=ReelApp.swift;sourceTree="<group>";};
+		FA02={isa=PBXFileReference;lastKnownFileType=sourcecode.swift;path=ContentView.swift;sourceTree="<group>";};
+		FA03={isa=PBXFileReference;lastKnownFileType=sourcecode.swift;path=DownloadItem.swift;sourceTree="<group>";};
+		FA04={isa=PBXFileReference;lastKnownFileType=sourcecode.swift;path=DownloadManager.swift;sourceTree="<group>";};
+		FA10={isa=PBXFileReference;lastKnownFileType=folder.assetcatalog;path=Assets.xcassets;sourceTree="<group>";};
+		FA11={isa=PBXFileReference;lastKnownFileType=text.plist.xml;path=Info.plist;sourceTree="<group>";};
+		FAAPP={isa=PBXFileReference;explicitFileType=wrapper.application;includeInIndex=0;path="Reel.app";sourceTree=BUILT_PRODUCTS_DIR;};
+/* End PBXFileReference section */
+/* Begin PBXFrameworksBuildPhase section */
+		BPFWK={isa=PBXFrameworksBuildPhase;buildActionMask=2147483647;files=();runOnlyForDeploymentPostprocessing=0;};
+/* End PBXFrameworksBuildPhase section */
+/* Begin PBXGroup section */
+		GRPMAIN={isa=PBXGroup;children=(FA01,FA02,FA03,FA04,FA10,FA11);path=Reel;sourceTree="<group>";};
+		GRPROOT={isa=PBXGroup;children=(GRPMAIN,GRPPROD);sourceTree="<group>";};
+		GRPPROD={isa=PBXGroup;children=(FAAPP);name=Products;sourceTree="<group>";};
+/* End PBXGroup section */
+/* Begin PBXNativeTarget section */
+		TGTMAIN={isa=PBXNativeTarget;buildConfigurationList=BCLMAIN;buildPhases=(BPSRC,BPFWK,BPRES);buildRules=();dependencies=();name=Reel;productName=Reel;productReference=FAAPP;productType="com.apple.product-type.application";};
+/* End PBXNativeTarget section */
+/* Begin PBXProject section */
+		PRJMAIN={isa=PBXProject;attributes={BuildIndependentTargetsInParallel=1;LastSwiftUpdateCheck=1500;LastUpgradeCheck=1500;};buildConfigurationList=BCLPRJ;compatibilityVersion="Xcode 14.0";developmentRegion=en;hasScannedForEncodings=0;knownRegions=(en,Base);mainGroup=GRPROOT;productRefGroup=GRPPROD;projectDirPath="";projectRoot="";targets=(TGTMAIN);};
+/* End PBXProject section */
+/* Begin PBXResourcesBuildPhase section */
+		BPRES={isa=PBXResourcesBuildPhase;buildActionMask=2147483647;files=(AA10,AA11);runOnlyForDeploymentPostprocessing=0;};
+/* End PBXResourcesBuildPhase section */
+/* Begin PBXSourcesBuildPhase section */
+		BPSRC={isa=PBXSourcesBuildPhase;buildActionMask=2147483647;files=(AA01,AA02,AA03,AA04);runOnlyForDeploymentPostprocessing=0;};
+/* End PBXSourcesBuildPhase section */
+/* Begin XCBuildConfiguration section */
+		BCDDBG={isa=XCBuildConfiguration;buildSettings={ALWAYS_SEARCH_USER_PATHS=NO;ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon;ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME=AccentColor;CODE_SIGN_STYLE=Automatic;COMBINE_HIDPI_IMAGES=YES;CURRENT_PROJECT_VERSION=1;ENABLE_HARDENED_RUNTIME=YES;INFOPLIST_FILE=Reel/Info.plist;INSTALL_PATH="$(LOCAL_APPS_DIR)";LD_RUNPATH_SEARCH_PATHS="@executable_path/../Frameworks";MACOSX_DEPLOYMENT_TARGET=13.0;MARKETING_VERSION=1.0;PRODUCT_BUNDLE_IDENTIFIER="com.reel.app";PRODUCT_NAME=Reel;SDKROOT=macosx;SWIFT_EMIT_LOC_STRINGS=YES;SWIFT_VERSION=5.0;};name=Debug;};
+		BCDRLS={isa=XCBuildConfiguration;buildSettings={ALWAYS_SEARCH_USER_PATHS=NO;ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon;ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME=AccentColor;CODE_SIGN_STYLE=Automatic;COMBINE_HIDPI_IMAGES=YES;CURRENT_PROJECT_VERSION=1;ENABLE_HARDENED_RUNTIME=YES;INFOPLIST_FILE=Reel/Info.plist;INSTALL_PATH="$(LOCAL_APPS_DIR)";LD_RUNPATH_SEARCH_PATHS="@executable_path/../Frameworks";MACOSX_DEPLOYMENT_TARGET=13.0;MARKETING_VERSION=1.0;PRODUCT_BUNDLE_IDENTIFIER="com.reel.app";PRODUCT_NAME=Reel;SDKROOT=macosx;SWIFT_EMIT_LOC_STRINGS=YES;SWIFT_VERSION=5.0;};name=Release;};
+		BCDPRJD={isa=XCBuildConfiguration;buildSettings={ALWAYS_SEARCH_USER_PATHS=NO;MACOSX_DEPLOYMENT_TARGET=13.0;SDKROOT=macosx;};name=Debug;};
+		BCDPRJR={isa=XCBuildConfiguration;buildSettings={ALWAYS_SEARCH_USER_PATHS=NO;MACOSX_DEPLOYMENT_TARGET=13.0;SDKROOT=macosx;};name=Release;};
+/* End XCBuildConfiguration section */
+/* Begin XCConfigurationList section */
+		BCLMAIN={isa=XCConfigurationList;buildConfigurations=(BCDDBG,BCDRLS);defaultConfigurationIsVisible=0;defaultConfigurationName=Release;};
+		BCLPRJ={isa=XCConfigurationList;buildConfigurations=(BCDPRJD,BCDPRJR);defaultConfigurationIsVisible=0;defaultConfigurationName=Release;};
+/* End XCConfigurationList section */
+	};
+	rootObject=PRJMAIN;
+}
