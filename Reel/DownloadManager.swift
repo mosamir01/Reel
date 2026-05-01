@@ -209,17 +209,17 @@ class DownloadManager: ObservableObject {
                 return ["-f", "best[ext=mp4]/best[vcodec!=none][acodec!=none]/best"]
             }
         case .mp3:
-            // MP3 conversion requires ffmpeg; without it, download best audio as-is (m4a/opus)
             if hasFFmpeg {
                 return ["-x", "--audio-format", "mp3", "--audio-quality", "0"]
             } else {
-                return ["-f", "bestaudio[ext=m4a]/bestaudio", "-x"]
+                // -x requires ffmpeg; just grab the audio stream directly (m4a plays in Music.app)
+                return ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"]
             }
         case .wav:
             if hasFFmpeg {
                 return ["-x", "--audio-format", "wav"]
             } else {
-                return ["-f", "bestaudio[ext=m4a]/bestaudio", "-x"]
+                return ["-f", "bestaudio[ext=m4a]/bestaudio"]
             }
         }
     }
