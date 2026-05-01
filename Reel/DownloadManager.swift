@@ -102,12 +102,13 @@ class DownloadManager: ObservableObject {
 
         item.status = .fetching
 
+        let ffmpeg = findBin("ffmpeg")
         var args: [String] = [
             "--newline", "--progress", "--no-playlist",
             "-o", folder.path + "/%(title)s.%(ext)s"
         ]
-        if let ffmpeg = findBin("ffmpeg") { args += ["--ffmpeg-location", ffmpeg] }
-        args += item.format.args
+        if let ffmpeg { args += ["--ffmpeg-location", ffmpeg] }
+        args += formatArgs(for: item.format, hasFFmpeg: ffmpeg != nil)
         args.append(item.url)
 
         let process = Process()
@@ -181,6 +182,29 @@ class DownloadManager: ObservableObject {
         if line.contains("has already been downloaded") { item.status = .done; item.progress = 1 }
         // ffmpeg post-process
         if line.hasPrefix("[ffmpeg]") { item.status = .converting; item.progress = 0.99 }
+    }
+
+    private func formatArgs(for format: DownloadFormat, hasFFmpeg: Bool) -> [String] {
+        switch format {
+        case .best:
+            // With ffmpeg: merge best video + best audio into mp4
+            // Without ffmpeg: download best single-file format (avoids separate streams)
+            if hasFFmpeg {
+                return ["-f", "bestvideo+bestaudio/best", "--merge-output-format", "mp4"]
+            } else {
+                return ["-f", "best[ext=mp4]/best[vcodec!=none][acodec!=none]/best"]
+            }
+        case .mp4:
+            if hasFFmpeg {
+                return ["-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best", "--merge-output-format", "mp4"]
+            } else {
+                return ["-f", "best[ext=mp4]/best[vcodec!=none][acodec!=none]/best"]
+            }
+        case .mp3:
+            return ["-x", "--audio-format", "mp3", "--audio-quality", "0"]
+        case .wav:
+            return ["-x", "--audio-format", "wav"]
+        }
     }
 
     private func findBin(_ name: String) -> String? {

@@ -29,14 +29,6 @@ enum DownloadFormat: String, CaseIterable, Identifiable {
         case .wav:  return "WAV Audio"
         }
     }
-    var args: [String] {
-        switch self {
-        case .best: return ["-f", "bestvideo+bestaudio/best", "--merge-output-format", "mp4"]
-        case .mp4:  return ["-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best", "--merge-output-format", "mp4"]
-        case .mp3:  return ["-x", "--audio-format", "mp3", "--audio-quality", "0"]
-        case .wav:  return ["-x", "--audio-format", "wav"]
-        }
-    }
 }
 
 @MainActor
