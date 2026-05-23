@@ -81,10 +81,10 @@ enum SidebarSection: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .all:       return "square.grid.2x2"
-        case .active:    return "arrow.down.circle"
-        case .queued:    return "clock"
-        case .completed: return "checkmark.circle"
+        case .all:       return "tray"
+        case .active:    return "arrow.down.to.line"
+        case .queued:    return "hourglass"
+        case .completed: return "checkmark"
         }
     }
 }
@@ -115,31 +115,6 @@ struct SidebarView: View {
                     )
                     .onTapGesture { selectedSection = section }
                 }
-            }
-
-            Divider().background(Color.rBorder2).padding(.vertical, 8)
-
-            // Supported platforms
-            VStack(alignment: .leading, spacing: 6) {
-                Text("SUPPORTED")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.rFg3)
-                    .tracking(1.0)
-                    .padding(.horizontal, 20)
-
-                let platforms = ["YouTube", "TikTok", "Instagram", "Twitter", "Reddit", "Vimeo", "Twitch", "+1000"]
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 58))], spacing: 4) {
-                    ForEach(platforms, id: \.self) { p in
-                        Text(p)
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.rFg3)
-                            .padding(.horizontal, 6).padding(.vertical, 3)
-                            .background(Color.rSurface)
-                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.rBorder2))
-                            .cornerRadius(4)
-                    }
-                }
-                .padding(.horizontal, 12)
             }
 
             Spacer()
