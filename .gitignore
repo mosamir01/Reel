@@ -9,3 +9,5 @@ xcuserdata/
 Pods/
 *.o
 *.d
+windows/node_modules/
+windows/dist/

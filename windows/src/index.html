@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Reel</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app" id="app">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="drag-region"></div>
+      <div class="sidebar-label">Library</div>
+      <nav class="nav-list" id="navList"></nav>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-footer">
+        <svg class="footer-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 5h12v8H2zM2 5l3-3h6l3 3"/>
+        </svg>
+        <span class="footer-folder" id="folderName">No folder</span>
+        <button class="gear-btn" id="gearBtn" title="Change folder">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="8" cy="8" r="2.5"/>
+            <path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14M3.75 3.75l1.06 1.06M11.19 11.19l1.06 1.06M3.75 12.25l1.06-1.06M11.19 4.81l1.06-1.06"/>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Detail -->
+    <main class="detail">
+      <!-- Input bar -->
+      <div class="input-bar">
+        <div class="url-row">
+          <svg class="url-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M6 10a4 4 0 0 1 0-4m4 4a4 4 0 0 0 0-4M4 8H1m14 0h-3"/>
+          </svg>
+          <input
+            id="urlInput"
+            class="url-input"
+            type="text"
+            placeholder="Paste a URL — YouTube, TikTok, Instagram, Twitter, Reddit…"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="url-clear" id="urlClear">
+            <svg viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm2.78 4.22a.75.75 0 0 0-1.06 0L8 6.94 6.28 5.22a.75.75 0 0 0-1.06 1.06L6.94 8l-1.72 1.72a.75.75 0 1 0 1.06 1.06L8 9.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L9.06 8l1.72-1.72a.75.75 0 0 0 0-1.06Z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="bar-row">
+          <div class="format-picker" id="formatPicker">
+            <button class="format-btn active" data-fmt="best">Best</button>
+            <div class="fmt-sep"></div>
+            <button class="format-btn" data-fmt="mp4">MP4</button>
+            <div class="fmt-sep"></div>
+            <button class="format-btn" data-fmt="mp3">MP3</button>
+            <div class="fmt-sep"></div>
+            <button class="format-btn" data-fmt="wav">WAV</button>
+          </div>
+          <button class="dl-btn" id="dlBtn">
+            <svg viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 1a.75.75 0 0 1 .75.75v7.69l2.72-2.72a.75.75 0 1 1 1.06 1.06l-4 4a.75.75 0 0 1-1.06 0l-4-4a.75.75 0 0 1 1.06-1.06l2.72 2.72V1.75A.75.75 0 0 1 8 1ZM2.5 14.25a.75.75 0 0 1 .75-.75h9.5a.75.75 0 0 1 0 1.5h-9.5a.75.75 0 0 1-.75-.75Z"/>
+            </svg>
+            <span>Download</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Download list -->
+      <div class="scroll-area" id="scrollArea"></div>
+
+      <!-- Status bar -->
+      <div class="status-bar">
+        <div class="status-pills" id="statusPills"></div>
+        <button class="clear-btn" id="clearBtn">Clear Completed</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Folder setup modal -->
+  <div class="modal-backdrop" id="folderModal">
+    <div class="modal">
+      <div class="modal-icon-wrap">
+        <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.1">
+          <path d="M3 9h26v18H3zM3 9l5-6h11l4 6"/>
+        </svg>
+      </div>
+      <h2 class="modal-title">Where should Reel save downloads?</h2>
+      <p class="modal-desc">Choose a folder on your computer. You can change this anytime from the sidebar.</p>
+      <button class="modal-pick-btn" id="modalPickBtn">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 5h12v8H2zM2 5l3-3h6l3 3"/>
+          <path d="M8 8.5v4M6 10.5 8 8.5l2 2"/>
+        </svg>
+        Choose Folder
+      </button>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

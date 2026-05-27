@@ -4,12 +4,12 @@ import AppKit
 // MARK: - Design tokens
 extension Color {
     static let rBg       = Color(hex: 0x0A0A0A)
-    static let rSidebar  = Color(hex: 0x0E0E0E)
-    static let rToolbar  = Color(hex: 0x0C0C0C)
+    static let rSidebar  = Color(hex: 0x0B0B0B)
+    static let rToolbar  = Color(hex: 0x0B0B0B)
     static let rSurface  = Color(hex: 0x141414)
     static let rSurface2 = Color(hex: 0x1A1A1A)
     static let rBorder   = Color.white.opacity(0.07)
-    static let rBorder2  = Color.white.opacity(0.04)
+    static let rBorder2  = Color.white.opacity(0.03)
     static let rFg       = Color(hex: 0xF0F0F0)
     static let rFg2      = Color(hex: 0xA3A3A3)
     static let rFg3      = Color(hex: 0x555555)
@@ -100,12 +100,12 @@ struct SidebarView: View {
             // Nav section
             VStack(alignment: .leading, spacing: 2) {
                 Text("LIBRARY")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.rFg3)
-                    .tracking(1.0)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 6)
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(Color.white.opacity(0.18))
+                    .tracking(1.2)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 18)
+                    .padding(.bottom, 10)
 
                 ForEach(SidebarSection.allCases) { section in
                     SidebarNavItem(
@@ -132,29 +132,38 @@ struct SidebarNavItem: View {
     let count: Int
 
     var body: some View {
-        HStack(spacing: 9) {
-            Image(systemName: section.icon)
-                .font(.system(size: 13))
-                .foregroundColor(isSelected ? .rFg : .rFg3)
-                .frame(width: 20)
-            Text(section.rawValue)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(isSelected ? .rFg : .rFg2)
-            Spacer()
-            if count > 0 {
-                Text("\(count)")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(isSelected ? .rFg : .rFg3)
-                    .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(isSelected ? Color.white.opacity(0.12) : Color.white.opacity(0.06))
-                    .cornerRadius(9)
+        ZStack(alignment: .leading) {
+            HStack(spacing: 9) {
+                Image(systemName: section.icon)
+                    .font(.system(size: 13))
+                    .foregroundColor(isSelected ? Color.white.opacity(0.85) : Color.white.opacity(0.5))
+                    .frame(width: 20)
+                Text(section.rawValue)
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundColor(isSelected ? Color.white.opacity(0.88) : Color.white.opacity(0.38))
+                    .kerning(-0.2)
+                Spacer()
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 9.5, weight: .bold))
+                        .foregroundColor(isSelected ? Color.white.opacity(0.55) : Color.white.opacity(0.28))
+                        .padding(.horizontal, 5.5).padding(.vertical, 1.5)
+                        .background(isSelected ? Color.white.opacity(0.09) : Color.white.opacity(0.05))
+                        .cornerRadius(8)
+                }
+            }
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(isSelected ? Color.white.opacity(0.065) : Color.clear)
+            .cornerRadius(6)
+            .padding(.horizontal, 8)
+            .contentShape(Rectangle())
+
+            if isSelected {
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(Color.rGreen.opacity(0.7))
+                    .frame(width: 2, height: 14)
             }
         }
-        .padding(.horizontal, 12).padding(.vertical, 7)
-        .background(isSelected ? Color.white.opacity(0.08) : Color.clear)
-        .cornerRadius(6)
-        .padding(.horizontal, 8)
-        .contentShape(Rectangle())
     }
 }
 
@@ -210,8 +219,8 @@ struct InputBar: View {
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 9)
-            .background(Color.rSurface)
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.rBorder))
+            .background(Color.white.opacity(0.04))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.06)))
             .cornerRadius(8)
 
             // Format picker + Download button
@@ -241,7 +250,7 @@ struct InputBar: View {
                 Button(action: addDownload) {
                     HStack(spacing: 5) {
                         Image(systemName: "arrow.down.circle.fill").font(.system(size: 12))
-                        Text("Download").font(.system(size: 12, weight: .bold))
+                        Text("Download").font(.system(size: 11.5, weight: .bold)).kerning(-0.2)
                     }
                     .foregroundColor(Color(hex: 0x0A0A0A))
                     .padding(.horizontal, 14).padding(.vertical, 7)
@@ -285,8 +294,9 @@ struct DownloadRow: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(item.title)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.rFg)
+                        .foregroundColor(Color.white.opacity(0.82))
                         .lineLimit(1)
+                        .kerning(-0.2)
                     HStack(spacing: 6) {
                         formatTag
                         Text(statusLabel)
@@ -305,14 +315,14 @@ struct DownloadRow: View {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 99)
-                                .fill(Color.white.opacity(0.06))
-                                .frame(height: 2)
+                                .fill(Color.white.opacity(0.05))
+                                .frame(height: 1.5)
                             RoundedRectangle(cornerRadius: 99)
                                 .fill(Color.rBlue)
-                                .frame(width: geo.size.width * item.progress, height: 2)
+                                .frame(width: geo.size.width * item.progress, height: 1.5)
                         }
                     }
-                    .frame(height: 2)
+                    .frame(height: 1.5)
 
                     HStack(spacing: 6) {
                         Text("\(Int(item.progress * 100))%")
@@ -345,11 +355,11 @@ struct DownloadRow: View {
                     .padding(.leading, 40)
             }
         }
-        .padding(.horizontal, 16).padding(.vertical, 12)
+        .padding(.horizontal, 16).padding(.vertical, 11)
         .background(Color.rBg)
         .overlay(
             Rectangle()
-                .fill(Color.rBorder2)
+                .fill(Color.white.opacity(0.03))
                 .frame(height: 1),
             alignment: .bottom
         )
@@ -474,27 +484,26 @@ struct StatusBar: View {
                 HStack(spacing: 4) {
                     Circle().fill(Color.rAmber).frame(width: 5, height: 5)
                     Text("\(activeCount) active")
-                        .font(.system(size: 10))
-                        .foregroundColor(.rFg3)
+                        .font(.system(size: 9.5))
+                        .foregroundColor(Color.white.opacity(0.28))
+                        .kerning(-0.1)
                 }
             }
             if completedCount > 0 {
                 HStack(spacing: 4) {
                     Circle().fill(Color.rGreen).frame(width: 5, height: 5)
                     Text("\(completedCount) completed")
-                        .font(.system(size: 10))
-                        .foregroundColor(.rFg3)
+                        .font(.system(size: 9.5))
+                        .foregroundColor(Color.white.opacity(0.28))
+                        .kerning(-0.1)
                 }
             }
             Spacer()
-            Text("gallery-dl")
-                .font(.system(size: 10))
-                .foregroundColor(.rFg3.opacity(0.4))
         }
-        .padding(.horizontal, 16).padding(.vertical, 6)
+        .padding(.horizontal, 16).padding(.vertical, 5)
         .background(Color.rToolbar)
         .overlay(
-            Rectangle().fill(Color.rBorder2).frame(height: 1),
+            Rectangle().fill(Color.white.opacity(0.03)).frame(height: 1),
             alignment: .top
         )
     }
