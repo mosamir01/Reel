@@ -17,6 +17,7 @@ enum DownloadStatus: Equatable {
 
 enum DownloadFormat: String, CaseIterable, Identifiable {
     case best  = "Best"
+    case p1080 = "1080p"
     case mp4   = "MP4"
     case mp3   = "MP3"
     case wav   = "WAV"
@@ -24,6 +25,7 @@ enum DownloadFormat: String, CaseIterable, Identifiable {
     var label: String {
         switch self {
         case .best:  return "Best Quality (video+audio)"
+        case .p1080: return "1080p MP4"
         case .mp4:   return "MP4 Video"
         case .mp3:   return "MP3 Audio"
         case .wav:   return "WAV Audio"
