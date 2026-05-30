@@ -1,36 +1,40 @@
-# 🎬 Reel
+# Reel
 
 A clean macOS app for downloading video and audio from **1000+ websites** — YouTube, TikTok, Instagram, Twitter/X, Reddit, Vimeo, SoundCloud, Twitch, and more.
 
 ![macOS](https://img.shields.io/badge/macOS-13%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
 
+## Download
+
+**[Download Reel.dmg](https://github.com/mosamir01/Reel/releases/latest/download/Reel.dmg)**
+
+No Homebrew. No terminal. No setup. Just open and paste a link.
+
 ## Features
 
-- **Paste any URL** — supports 1000+ sites via yt-dlp
-- **Format picker** — Best Quality, MP4 video, MP3 audio, WAV audio
-- **Live progress** — per-download progress bar with speed and ETA
-- **Concurrent downloads** — up to 3 at once
+- **No dependencies** — everything is bundled inside the app
+- **Paste any URL** — YouTube, TikTok, Instagram, Twitter/X, Reddit, Vimeo, SoundCloud, Twitch, and 1000+ more
+- **Format picker** — Best Quality, MP4, MP3, WAV
+- **Faster downloads** — parallel connections for faster speeds
+- **Live progress** — speed, ETA, and status per download
+- **Up to 3 concurrent downloads**
 - **One-click open** — open the file or folder when done
-- **Retry on failure** — one click to retry failed downloads
-- **Remembers your folder** — asks once on first launch, saves it
+- **Retry on failure** — one click to retry
+- **Remembers your folder** — set once, never asked again
 
 ## Requirements
 
 - macOS 13 or later
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) installed
+
+## Build from Source
 
 ```bash
-brew install yt-dlp
+git clone https://github.com/mosamir01/Reel.git
+cd Reel
+open Reel.xcodeproj
 ```
 
-> **Optional:** Install `ffmpeg` for best-quality video+audio merging:
-> ```bash
-> brew install ffmpeg
-> ```
-
-## Build
-
-Open `Reel.xcodeproj` in Xcode 15+ and hit Run, or:
+Or build from the command line:
 
 ```bash
 xcodebuild -scheme Reel -configuration Release build
@@ -38,9 +42,9 @@ xcodebuild -scheme Reel -configuration Release build
 
 ## How it works
 
-Reel is a native SwiftUI wrapper around [yt-dlp](https://github.com/yt-dlp/yt-dlp), the powerful open-source media downloader. It passes your URL and format choice to yt-dlp, parses the live progress output, and presents it in a clean Mac-native interface.
+Reel bundles [yt-dlp](https://github.com/yt-dlp/yt-dlp) directly inside the app — no separate installation needed. It passes your URL and format choice to yt-dlp, uses parallel connections for faster downloads, parses the live progress output, and presents everything in a clean Mac-native interface.
 
-## Supported Sites (sample)
+## Supported Sites
 
 YouTube · TikTok · Instagram · Twitter/X · Reddit · Facebook · Vimeo · SoundCloud · Twitch · Dailymotion · Bilibili · Rumble · Odysee · Pinterest · LinkedIn · and [1000+ more](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
 
