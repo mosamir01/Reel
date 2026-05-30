@@ -105,6 +105,9 @@ class DownloadManager: ObservableObject {
         let ffmpeg = findBin("ffmpeg")
         var args: [String] = [
             "--newline", "--progress", "--no-playlist",
+            // Parallelise DASH/HLS fragment downloads — large (4K) merges are
+            // far too slow when fetched one fragment at a time.
+            "--concurrent-fragments", "8",
             "-o", folder.path + "/%(title)s.%(ext)s"
         ]
         if let ffmpeg { args += ["--ffmpeg-location", ffmpeg] }
