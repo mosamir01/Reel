@@ -759,6 +759,11 @@ struct ContentView: View {
         .frame(minWidth: 720, minHeight: 480)
         .background(Color.rBg)
         .preferredColorScheme(lightMode ? .light : .dark)
+        .task(id: lightMode) {
+            // Drive the AppKit appearance directly so the custom NSColor-backed
+            // tokens re-resolve immediately when the theme is toggled.
+            NSApp.appearance = NSAppearance(named: lightMode ? .aqua : .darkAqua)
+        }
         .sheet(isPresented: $dm.needsFolderSetup) {
             FolderSetupView().environmentObject(dm)
         }
