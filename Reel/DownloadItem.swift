@@ -29,6 +29,28 @@ enum DownloadFormat: String, CaseIterable, Identifiable {
         case .wav:   return "WAV Audio"
         }
     }
+    var isVideo: Bool { self == .best || self == .mp4 }
+}
+
+enum VideoQuality: String, CaseIterable, Identifiable {
+    case best  = "Best"
+    case p2160 = "4K"
+    case p1440 = "1440p"
+    case p1080 = "1080p"
+    case p720  = "720p"
+    case p480  = "480p"
+    var id: String { rawValue }
+    /// Max vertical resolution, or nil for "highest available".
+    var maxHeight: Int? {
+        switch self {
+        case .best:  return nil
+        case .p2160: return 2160
+        case .p1440: return 1440
+        case .p1080: return 1080
+        case .p720:  return 720
+        case .p480:  return 480
+        }
+    }
 }
 
 @MainActor
@@ -36,6 +58,7 @@ class DownloadItem: ObservableObject, Identifiable {
     let id = UUID()
     let url: String
     let format: DownloadFormat
+    let quality: VideoQuality
     @Published var title: String
     @Published var status: DownloadStatus = .queued
     @Published var progress: Double = 0
@@ -45,9 +68,10 @@ class DownloadItem: ObservableObject, Identifiable {
     var process: Process?
     var errorLines: [String] = []
 
-    init(url: String, format: DownloadFormat) {
+    init(url: String, format: DownloadFormat, quality: VideoQuality = .best) {
         self.url = url
         self.format = format
+        self.quality = quality
         self.title = URL(string: url)?.host ?? url
     }
 }

@@ -43,12 +43,12 @@ class DownloadManager: ObservableObject {
         }
     }
 
-    func add(url: String, format: DownloadFormat) {
+    func add(url: String, format: DownloadFormat, quality: VideoQuality = .best) {
         guard let folder = outputFolder else { needsFolderSetup = true; return }
         _ = folder   // silence unused warning
         let clean = url.trimmingCharacters(in: .whitespaces)
         guard !clean.isEmpty else { return }
-        let item = DownloadItem(url: clean, format: format)
+        let item = DownloadItem(url: clean, format: format, quality: quality)
         items.insert(item, at: 0)
         processQueue()
     }
@@ -108,7 +108,7 @@ class DownloadManager: ObservableObject {
             "-o", folder.path + "/%(title)s.%(ext)s"
         ]
         if let ffmpeg { args += ["--ffmpeg-location", ffmpeg] }
-        args += formatArgs(for: item.format, hasFFmpeg: ffmpeg != nil)
+        args += formatArgs(for: item.format, quality: item.quality, hasFFmpeg: ffmpeg != nil)
         args.append(item.url)
 
         let process = Process()
@@ -192,19 +192,21 @@ class DownloadManager: ObservableObject {
         }
     }
 
-    private func formatArgs(for format: DownloadFormat, hasFFmpeg: Bool) -> [String] {
+    private func formatArgs(for format: DownloadFormat, quality: VideoQuality, hasFFmpeg: Bool) -> [String] {
+        // Resolution cap applied to video streams, e.g. "[height<=1080]". Empty = highest available.
+        let cap = quality.maxHeight.map { "[height<=\($0)]" } ?? ""
         switch format {
         case .best:
             if hasFFmpeg {
-                return ["-f", "bestvideo+bestaudio/best", "--merge-output-format", "mp4"]
+                return ["-f", "bestvideo\(cap)+bestaudio/best\(cap)/best", "--merge-output-format", "mp4"]
             } else {
-                return ["-f", "bestvideo+bestaudio/best"]
+                return ["-f", "bestvideo\(cap)+bestaudio/best\(cap)/best"]
             }
         case .mp4:
             if hasFFmpeg {
-                return ["-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best", "--merge-output-format", "mp4"]
+                return ["-f", "bestvideo\(cap)[ext=mp4]+bestaudio[ext=m4a]/best\(cap)[ext=mp4]/best\(cap)/best", "--merge-output-format", "mp4"]
             } else {
-                return ["-f", "best[ext=mp4]/best[vcodec!=none][acodec!=none]/best"]
+                return ["-f", "best\(cap)[ext=mp4]/best\(cap)[vcodec!=none][acodec!=none]/best\(cap)/best"]
             }
         case .mp3:
             if hasFFmpeg {

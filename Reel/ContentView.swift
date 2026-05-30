@@ -3,20 +3,21 @@ import AppKit
 
 // MARK: - Design tokens
 extension Color {
-    static let rBg       = Color(hex: 0x0A0A0A)
-    static let rSidebar  = Color(hex: 0x0B0B0B)
-    static let rToolbar  = Color(hex: 0x0B0B0B)
-    static let rSurface  = Color(hex: 0x141414)
-    static let rSurface2 = Color(hex: 0x1A1A1A)
-    static let rBorder   = Color.white.opacity(0.07)
-    static let rBorder2  = Color.white.opacity(0.03)
-    static let rFg       = Color(hex: 0xF0F0F0)
-    static let rFg2      = Color(hex: 0xA3A3A3)
-    static let rFg3      = Color(hex: 0x555555)
-    static let rGreen    = Color(hex: 0x3ECF8E)
-    static let rAmber    = Color(hex: 0xF5A623)
-    static let rRed      = Color(hex: 0xFF4D4D)
-    static let rBlue     = Color(hex: 0x60A5FA)
+    // Surfaces & text adapt to the active appearance (light / dark).
+    static let rBg       = Color(light: 0xFFFFFF, dark: 0x0A0A0A)
+    static let rSidebar  = Color(light: 0xF5F5F7, dark: 0x0B0B0B)
+    static let rToolbar  = Color(light: 0xF5F5F7, dark: 0x0B0B0B)
+    static let rSurface  = Color(light: 0xEFEFF1, dark: 0x141414)
+    static let rSurface2 = Color(light: 0xE7E7EA, dark: 0x1A1A1A)
+    static let rBorder   = Color.ink(0.10)
+    static let rBorder2  = Color.ink(0.05)
+    static let rFg       = Color(light: 0x111111, dark: 0xF0F0F0)
+    static let rFg2      = Color(light: 0x5A5A5F, dark: 0xA3A3A3)
+    static let rFg3      = Color(light: 0x9A9AA0, dark: 0x555555)
+    static let rGreen    = Color(light: 0x1FA971, dark: 0x3ECF8E)
+    static let rAmber    = Color(light: 0xD2860A, dark: 0xF5A623)
+    static let rRed      = Color(light: 0xE23B3B, dark: 0xFF4D4D)
+    static let rBlue     = Color(light: 0x2563EB, dark: 0x60A5FA)
 
     init(hex: UInt32) {
         self.init(
@@ -24,6 +25,26 @@ extension Color {
             green: Double((hex >>  8) & 0xFF) / 255,
             blue:  Double( hex        & 0xFF) / 255
         )
+    }
+
+    /// A color that resolves to a different hex per appearance.
+    init(light: UInt32, dark: UInt32) {
+        self.init(nsColor: NSColor(name: nil) { appearance in
+            let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            let hex = isDark ? dark : light
+            return NSColor(srgbRed: Double((hex >> 16) & 0xFF) / 255,
+                           green:   Double((hex >>  8) & 0xFF) / 255,
+                           blue:    Double( hex        & 0xFF) / 255,
+                           alpha:   1)
+        })
+    }
+
+    /// Foreground "ink" — white in dark mode, black in light mode — at the given opacity.
+    static func ink(_ opacity: Double) -> Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            return NSColor(white: isDark ? 1 : 0, alpha: opacity)
+        })
     }
 }
 
@@ -40,13 +61,13 @@ struct PlatformBadge: View {
             return ("IG", Color.purple.opacity(0.12), Color(hex: 0xC855F7))
         }
         if u.contains("tiktok") {
-            return ("TT", Color.white.opacity(0.07), Color(hex: 0xD4D4D4))
+            return ("TT", Color.ink(0.07), Color(hex: 0xD4D4D4))
         }
         if u.contains("soundcloud") {
             return ("SC", Color.orange.opacity(0.12), Color(hex: 0xFF5500))
         }
         if u.contains("twitter") || u.contains("x.com") {
-            return ("X", Color.white.opacity(0.07), Color(hex: 0xA3A3A3))
+            return ("X", Color.ink(0.07), Color(hex: 0xA3A3A3))
         }
         if u.contains("reddit") {
             return ("R", Color.orange.opacity(0.12), Color(hex: 0xFF4500))
@@ -57,7 +78,7 @@ struct PlatformBadge: View {
         if u.contains("twitch") {
             return ("TW", Color.purple.opacity(0.12), Color(hex: 0x9F7AEA))
         }
-        return ("↓", Color.white.opacity(0.06), Color(hex: 0x555555))
+        return ("↓", Color.ink(0.06), Color(hex: 0x555555))
     }
 
     var body: some View {
@@ -101,7 +122,7 @@ struct SidebarView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("LIBRARY")
                     .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(Color.white.opacity(0.18))
+                    .foregroundColor(Color.ink(0.18))
                     .tracking(1.2)
                     .padding(.horizontal, 18)
                     .padding(.top, 18)
@@ -136,24 +157,24 @@ struct SidebarNavItem: View {
             HStack(spacing: 9) {
                 Image(systemName: section.icon)
                     .font(.system(size: 13))
-                    .foregroundColor(isSelected ? Color.white.opacity(0.85) : Color.white.opacity(0.5))
+                    .foregroundColor(isSelected ? Color.ink(0.85) : Color.ink(0.5))
                     .frame(width: 20)
                 Text(section.rawValue)
                     .font(.system(size: 12.5, weight: .medium))
-                    .foregroundColor(isSelected ? Color.white.opacity(0.88) : Color.white.opacity(0.38))
+                    .foregroundColor(isSelected ? Color.ink(0.88) : Color.ink(0.38))
                     .kerning(-0.2)
                 Spacer()
                 if count > 0 {
                     Text("\(count)")
                         .font(.system(size: 9.5, weight: .bold))
-                        .foregroundColor(isSelected ? Color.white.opacity(0.55) : Color.white.opacity(0.28))
+                        .foregroundColor(isSelected ? Color.ink(0.55) : Color.ink(0.28))
                         .padding(.horizontal, 5.5).padding(.vertical, 1.5)
-                        .background(isSelected ? Color.white.opacity(0.09) : Color.white.opacity(0.05))
+                        .background(isSelected ? Color.ink(0.09) : Color.ink(0.05))
                         .cornerRadius(8)
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(isSelected ? Color.white.opacity(0.065) : Color.clear)
+            .background(isSelected ? Color.ink(0.065) : Color.clear)
             .cornerRadius(6)
             .padding(.horizontal, 8)
             .contentShape(Rectangle())
@@ -169,6 +190,7 @@ struct SidebarNavItem: View {
 
 struct SidebarFooter: View {
     @EnvironmentObject var dm: DownloadManager
+    @AppStorage("reelLightMode") private var lightMode = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -180,6 +202,12 @@ struct SidebarFooter: View {
                 .foregroundColor(.rFg2)
                 .lineLimit(1)
             Spacer()
+            Button { lightMode.toggle() } label: {
+                Image(systemName: lightMode ? "moon.fill" : "sun.max.fill").font(.system(size: 11))
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.rFg3)
+            .help(lightMode ? "Switch to dark mode" : "Switch to light mode")
             Button { dm.pickOutputFolder() } label: {
                 Image(systemName: "gearshape").font(.system(size: 11))
             }
@@ -196,6 +224,7 @@ struct SidebarFooter: View {
 struct InputBar: View {
     @Binding var urlText: String
     @Binding var format: DownloadFormat
+    @Binding var quality: VideoQuality
     let addDownload: () -> Void
 
     var body: some View {
@@ -219,8 +248,8 @@ struct InputBar: View {
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 9)
-            .background(Color.white.opacity(0.04))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.06)))
+            .background(Color.ink(0.04))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.ink(0.06)))
             .cornerRadius(8)
 
             // Format picker + Download button
@@ -231,7 +260,7 @@ struct InputBar: View {
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(format == f ? .rFg : .rFg3)
                             .padding(.horizontal, 10).padding(.vertical, 5)
-                            .background(format == f ? Color.white.opacity(0.10) : Color.clear)
+                            .background(format == f ? Color.ink(0.10) : Color.clear)
                             .buttonStyle(.plain)
                         if idx < DownloadFormat.allCases.count - 1 {
                             Rectangle()
@@ -244,6 +273,37 @@ struct InputBar: View {
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.rBorder))
                 .cornerRadius(6)
 
+                // Resolution picker — only relevant for video formats
+                if format.isVideo {
+                    Menu {
+                        ForEach(VideoQuality.allCases) { q in
+                            Button {
+                                quality = q
+                            } label: {
+                                if quality == q {
+                                    Label(q.rawValue, systemImage: "checkmark")
+                                } else {
+                                    Text(q.rawValue)
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "slider.horizontal.3").font(.system(size: 10))
+                            Text(quality.rawValue).font(.system(size: 11, weight: .semibold))
+                            Image(systemName: "chevron.down").font(.system(size: 7, weight: .bold))
+                        }
+                        .foregroundColor(.rFg2)
+                        .padding(.horizontal, 9).padding(.vertical, 5)
+                        .background(Color.rSurface)
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.rBorder))
+                        .cornerRadius(6)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                }
+
                 Spacer()
 
                 let canDownload = !urlText.trimmingCharacters(in: .whitespaces).isEmpty
@@ -252,7 +312,7 @@ struct InputBar: View {
                         Image(systemName: "arrow.down.circle.fill").font(.system(size: 12))
                         Text("Download").font(.system(size: 11.5, weight: .bold)).kerning(-0.2)
                     }
-                    .foregroundColor(Color(hex: 0x0A0A0A))
+                    .foregroundColor(Color.rBg)
                     .padding(.horizontal, 14).padding(.vertical, 7)
                     .background(canDownload ? Color.rFg : Color.rFg3)
                     .cornerRadius(6)
@@ -274,7 +334,7 @@ struct DarkActionButtonStyle: ButtonStyle {
             .font(.system(size: 11, weight: .medium))
             .foregroundColor(isPrimary ? .rGreen : .rFg3)
             .padding(.horizontal, 10).padding(.vertical, 4)
-            .background(isPrimary ? Color.rGreen.opacity(0.10) : Color.white.opacity(0.05))
+            .background(isPrimary ? Color.rGreen.opacity(0.10) : Color.ink(0.05))
             .overlay(RoundedRectangle(cornerRadius: 5).stroke(isPrimary ? Color.rGreen.opacity(0.30) : Color.rBorder))
             .cornerRadius(5)
             .opacity(configuration.isPressed ? 0.7 : 1)
@@ -294,11 +354,20 @@ struct DownloadRow: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(item.title)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.82))
+                        .foregroundColor(Color.ink(0.82))
                         .lineLimit(1)
                         .kerning(-0.2)
                     HStack(spacing: 6) {
                         formatTag
+                        if item.format.isVideo && item.quality != .best {
+                            Text(item.quality.rawValue)
+                                .font(.system(size: 9, weight: .bold))
+                                .tracking(0.4)
+                                .foregroundColor(.rFg3)
+                                .padding(.horizontal, 5).padding(.vertical, 2)
+                                .background(Color.ink(0.05))
+                                .cornerRadius(3)
+                        }
                         Text(statusLabel)
                             .font(.system(size: 11))
                             .foregroundColor(.rFg3)
@@ -315,7 +384,7 @@ struct DownloadRow: View {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 99)
-                                .fill(Color.white.opacity(0.05))
+                                .fill(Color.ink(0.05))
                                 .frame(height: 1.5)
                             RoundedRectangle(cornerRadius: 99)
                                 .fill(Color.rBlue)
@@ -359,7 +428,7 @@ struct DownloadRow: View {
         .background(Color.rBg)
         .overlay(
             Rectangle()
-                .fill(Color.white.opacity(0.03))
+                .fill(Color.ink(0.03))
                 .frame(height: 1),
             alignment: .bottom
         )
@@ -372,7 +441,7 @@ struct DownloadRow: View {
             case .done:        return (Color.rGreen.opacity(0.12), .rGreen)
             case .failed:      return (Color.rRed.opacity(0.12),   .rRed)
             case .queued:      return (Color.rAmber.opacity(0.12), .rAmber)
-            default:           return (Color.white.opacity(0.07),  .rFg3)
+            default:           return (Color.ink(0.07),  .rFg3)
             }
         }()
         return Text(item.format.rawValue.uppercased())
@@ -408,9 +477,9 @@ struct DownloadRow: View {
 
             case .failed:
                 Button("Retry") {
-                    let u = item.url; let f = item.format
+                    let u = item.url; let f = item.format; let q = item.quality
                     dm.remove(item)
-                    dm.add(url: u, format: f)
+                    dm.add(url: u, format: f, quality: q)
                 }
                 .buttonStyle(DarkActionButtonStyle(isPrimary: false))
                 Button { dm.remove(item) } label: {
@@ -485,7 +554,7 @@ struct StatusBar: View {
                     Circle().fill(Color.rAmber).frame(width: 5, height: 5)
                     Text("\(activeCount) active")
                         .font(.system(size: 9.5))
-                        .foregroundColor(Color.white.opacity(0.28))
+                        .foregroundColor(Color.ink(0.28))
                         .kerning(-0.1)
                 }
             }
@@ -494,7 +563,7 @@ struct StatusBar: View {
                     Circle().fill(Color.rGreen).frame(width: 5, height: 5)
                     Text("\(completedCount) completed")
                         .font(.system(size: 9.5))
-                        .foregroundColor(Color.white.opacity(0.28))
+                        .foregroundColor(Color.ink(0.28))
                         .kerning(-0.1)
                 }
             }
@@ -503,7 +572,7 @@ struct StatusBar: View {
         .padding(.horizontal, 16).padding(.vertical, 5)
         .background(Color.rToolbar)
         .overlay(
-            Rectangle().fill(Color.white.opacity(0.03)).frame(height: 1),
+            Rectangle().fill(Color.ink(0.03)).frame(height: 1),
             alignment: .top
         )
     }
@@ -514,6 +583,7 @@ struct DetailView: View {
     @EnvironmentObject var dm: DownloadManager
     @Binding var urlText: String
     @Binding var format: DownloadFormat
+    @Binding var quality: VideoQuality
     let selectedSection: SidebarSection
     let filteredItems: [DownloadItem]
     let addDownload: () -> Void
@@ -526,7 +596,7 @@ struct DetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            InputBar(urlText: $urlText, format: $format, addDownload: addDownload)
+            InputBar(urlText: $urlText, format: $format, quality: $quality, addDownload: addDownload)
 
             Rectangle().fill(Color.rBorder2).frame(height: 1)
 
@@ -577,6 +647,7 @@ struct DetailView: View {
 // MARK: - Folder setup sheet
 struct FolderSetupView: View {
     @EnvironmentObject var dm: DownloadManager
+    @AppStorage("reelLightMode") private var lightMode = false
 
     var body: some View {
         ZStack {
@@ -609,7 +680,7 @@ struct FolderSetupView: View {
                         Text("Choose Folder")
                     }
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(Color(hex: 0x0A0A0A))
+                    .foregroundColor(Color.rBg)
                     .frame(width: 220)
                     .padding(.vertical, 12)
                     .background(Color.rFg)
@@ -620,15 +691,17 @@ struct FolderSetupView: View {
             .padding(40)
         }
         .frame(width: 440, height: 300)
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(lightMode ? .light : .dark)
     }
 }
 
 // MARK: - Root view
 struct ContentView: View {
     @EnvironmentObject var dm: DownloadManager
+    @AppStorage("reelLightMode") private var lightMode = false
     @State private var urlText = ""
     @State private var format: DownloadFormat = .best
+    @State private var quality: VideoQuality = .best
     @State private var selectedSection: SidebarSection = .all
 
     var filteredItems: [DownloadItem] {
@@ -675,6 +748,7 @@ struct ContentView: View {
             DetailView(
                 urlText: $urlText,
                 format: $format,
+                quality: $quality,
                 selectedSection: selectedSection,
                 filteredItems: filteredItems,
                 addDownload: addDownload
@@ -684,7 +758,7 @@ struct ContentView: View {
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 720, minHeight: 480)
         .background(Color.rBg)
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(lightMode ? .light : .dark)
         .sheet(isPresented: $dm.needsFolderSetup) {
             FolderSetupView().environmentObject(dm)
         }
@@ -693,7 +767,7 @@ struct ContentView: View {
     func addDownload() {
         let url = urlText.trimmingCharacters(in: .whitespaces)
         guard !url.isEmpty else { return }
-        dm.add(url: url, format: format)
+        dm.add(url: url, format: format, quality: quality)
         urlText = ""
     }
 }
