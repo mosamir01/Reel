@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import AVFoundation
 
 @MainActor
 class DownloadManager: ObservableObject {
@@ -102,18 +103,59 @@ class DownloadManager: ObservableObject {
 
         item.status = .fetching
 
+        // Video formats download the separate video + audio streams into a temp
+        // directory and merge them locally with AVFoundation — no external binary.
+        // Audio formats download a single stream straight to the output folder.
+        let temp: URL? = item.format.isVideo
+            ? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+                .appendingPathComponent("reel-\(item.id.uuidString)", isDirectory: true)
+            : nil
+        if let temp { try? FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true) }
+        let destDir = temp ?? folder
+        let template = item.format.isVideo ? "%(title)s.%(format_id)s.%(ext)s" : "%(title)s.%(ext)s"
+
         var args: [String] = [
             "--newline", "--progress", "--no-playlist",
-            // Parallelise DASH/HLS fragment downloads — large (4K) downloads are
-            // far too slow when fetched one fragment at a time.
+            // Parallelise DASH/HLS fragment downloads — large downloads are far
+            // too slow when fetched one fragment at a time.
             "--concurrent-fragments", "8",
-            "-o", folder.path + "/%(title)s.%(ext)s"
+            "-o", destDir.path + "/" + template
         ]
         args += formatArgs(for: item.format, quality: item.quality)
         args.append(item.url)
 
+        let code = await runYtDlp(ytdlp, args: args, item: item)
+
+        // yt-dlp concluded early (e.g. "already downloaded").
+        if case .done = item.status {
+            if let temp { try? FileManager.default.removeItem(at: temp) }
+            item.process = nil; processQueue(); return
+        }
+        guard code == 0 else {
+            if case .failed = item.status {} else {
+                item.status = .failed(item.errorLines.last
+                    ?? "Download failed. Make sure the URL is valid and yt-dlp is up to date.")
+            }
+            if let temp { try? FileManager.default.removeItem(at: temp) }
+            item.process = nil; processQueue(); return
+        }
+
+        if let temp {
+            await mergeDownloads(item: item, tempDir: temp, into: folder)
+            try? FileManager.default.removeItem(at: temp)
+        } else {
+            item.status = .done
+            item.progress = 1.0
+        }
+
+        item.process = nil
+        processQueue()
+    }
+
+    /// Runs yt-dlp, streaming progress into `item`, and returns the exit code.
+    private func runYtDlp(_ exe: String, args: [String], item: DownloadItem) async -> Int32 {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: ytdlp)
+        process.executableURL = URL(fileURLWithPath: exe)
         process.arguments = args
         let pipe = Pipe()
         process.standardOutput = pipe
@@ -132,29 +174,110 @@ class DownloadManager: ObservableObject {
         }
 
         do { try process.run() }
-        catch { item.status = .failed(error.localizedDescription); processQueue(); return }
+        catch { item.status = .failed(error.localizedDescription); return -1 }
 
         await withCheckedContinuation { cont in
             DispatchQueue.global().async { process.waitUntilExit(); cont.resume() }
         }
-
         pipe.fileHandleForReading.readabilityHandler = nil
+        return process.terminationStatus
+    }
 
-        switch item.status {
-        case .done, .failed: break
-        default:
-            if process.terminationStatus == 0 {
-                item.status = .done
-                item.progress = 1.0
-            } else {
-                let msg = item.errorLines.last
-                    ?? "Download failed. Make sure the URL is valid and yt-dlp is up to date."
-                item.status = .failed(msg)
-            }
+    /// Merges the downloaded video + audio streams in `tempDir` into a single
+    /// mp4 in `folder` using AVFoundation (passthrough remux, no re-encode).
+    private func mergeDownloads(item: DownloadItem, tempDir: URL, into folder: URL) async {
+        let fm = FileManager.default
+        let files = ((try? fm.contentsOfDirectory(at: tempDir, includingPropertiesForKeys: nil)) ?? [])
+            .filter { !$0.lastPathComponent.hasPrefix(".") }
+        guard !files.isEmpty else { item.status = .failed("Download produced no file."); return }
+
+        item.status = .converting
+        item.progress = 0.95
+
+        var videoFile: URL?
+        var audioFile: URL?
+        for f in files {
+            let asset = AVURLAsset(url: f)
+            let hasVideo = !(((try? await asset.loadTracks(withMediaType: .video)) ?? []).isEmpty)
+            let hasAudio = !(((try? await asset.loadTracks(withMediaType: .audio)) ?? []).isEmpty)
+            if hasVideo, videoFile == nil { videoFile = f }
+            else if hasAudio, audioFile == nil { audioFile = f }
         }
 
-        item.process = nil
-        processQueue()
+        let source = videoFile ?? files[0]
+        let title = source.deletingPathExtension().deletingPathExtension().lastPathComponent
+        let output = uniqueURL(in: folder, name: title.isEmpty ? "video" : title, ext: "mp4")
+
+        do {
+            if let v = videoFile, let a = audioFile {
+                try await merge(video: v, audio: a, to: output)
+            } else {
+                try fm.moveItem(at: source, to: output)
+            }
+            item.filePath = output.path
+            item.title = output.deletingPathExtension().lastPathComponent
+            item.status = .done
+            item.progress = 1.0
+        } catch {
+            item.status = .failed("Merge failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Combines a video-only and audio-only file into one mp4.
+    private func merge(video: URL, audio: URL, to output: URL) async throws {
+        let comp = AVMutableComposition()
+        let vAsset = AVURLAsset(url: video)
+        let aAsset = AVURLAsset(url: audio)
+
+        guard let srcV = try await vAsset.loadTracks(withMediaType: .video).first else {
+            throw NSError(domain: "Reel", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "No video track found."])
+        }
+        let vDur = try await vAsset.load(.duration)
+        let dstV = comp.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
+        try dstV?.insertTimeRange(CMTimeRange(start: .zero, duration: vDur), of: srcV, at: .zero)
+        if let transform = try? await srcV.load(.preferredTransform) { dstV?.preferredTransform = transform }
+
+        if let srcA = try await aAsset.loadTracks(withMediaType: .audio).first {
+            let aDur = try await aAsset.load(.duration)
+            let dstA = comp.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+            try dstA?.insertTimeRange(CMTimeRange(start: .zero, duration: CMTimeMinimum(aDur, vDur)), of: srcA, at: .zero)
+        }
+
+        do {
+            try await export(comp, to: output, preset: AVAssetExportPresetPassthrough)
+        } catch {
+            // Codecs not mp4-passthrough compatible (e.g. VP9/Opus) — re-encode.
+            try await export(comp, to: output, preset: AVAssetExportPresetHighestQuality)
+        }
+    }
+
+    private func export(_ asset: AVAsset, to output: URL, preset: String) async throws {
+        try? FileManager.default.removeItem(at: output)
+        guard let session = AVAssetExportSession(asset: asset, presetName: preset) else {
+            throw NSError(domain: "Reel", code: 2,
+                          userInfo: [NSLocalizedDescriptionKey: "Export not supported for this media."])
+        }
+        session.outputURL = output
+        session.outputFileType = .mp4
+        await withCheckedContinuation { cont in
+            session.exportAsynchronously { cont.resume() }
+        }
+        guard session.status == .completed else {
+            throw session.error ?? NSError(domain: "Reel", code: 3,
+                          userInfo: [NSLocalizedDescriptionKey: "Export failed."])
+        }
+    }
+
+    private func uniqueURL(in folder: URL, name: String, ext: String) -> URL {
+        let fm = FileManager.default
+        var candidate = folder.appendingPathComponent("\(name).\(ext)")
+        var n = 1
+        while fm.fileExists(atPath: candidate.path) {
+            candidate = folder.appendingPathComponent("\(name) (\(n)).\(ext)")
+            n += 1
+        }
+        return candidate
     }
 
     private func parse(_ line: String, item: DownloadItem) {
@@ -195,10 +318,11 @@ class DownloadManager: ObservableObject {
         // Resolution cap applied to video streams, e.g. "[height<=1080]". Empty = highest available.
         let cap = quality.maxHeight.map { "[height<=\($0)]" } ?? ""
         switch format {
-        case .best:
-            return ["-f", "best\(cap)/best"]
-        case .mp4:
-            return ["-f", "best\(cap)[ext=mp4]/best\(cap)[vcodec!=none][acodec!=none]/best\(cap)/best"]
+        case .best, .mp4:
+            // Best video-only + best audio as SEPARATE files (comma selector); the
+            // app merges them locally with AVFoundation. mp4/m4a is preferred so the
+            // merge is a fast passthrough remux.
+            return ["-f", "bv*[ext=mp4]\(cap)/bv*\(cap),ba[ext=m4a]/ba"]
         case .mp3:
             // Grab the audio stream directly (m4a plays in Music.app)
             return ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"]

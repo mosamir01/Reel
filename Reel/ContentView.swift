@@ -222,10 +222,15 @@ struct SidebarFooter: View {
 
 // MARK: - Input bar
 struct InputBar: View {
+    @EnvironmentObject var dm: DownloadManager
     @Binding var urlText: String
     @Binding var format: DownloadFormat
     @Binding var quality: VideoQuality
     let addDownload: () -> Void
+
+    private var hasClearable: Bool {
+        dm.items.contains { switch $0.status { case .done, .failed: return true; default: return false } }
+    }
 
     var body: some View {
         VStack(spacing: 10) {
@@ -305,6 +310,20 @@ struct InputBar: View {
                 }
 
                 Spacer()
+
+                if hasClearable {
+                    Button { dm.clearCompleted() } label: {
+                        Text("Clear Completed")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.rFg3)
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(Color.rSurface)
+                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.rBorder))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Remove done and failed items")
+                }
 
                 let canDownload = !urlText.trimmingCharacters(in: .whitespaces).isEmpty
                 Button(action: addDownload) {
@@ -588,12 +607,6 @@ struct DetailView: View {
     let filteredItems: [DownloadItem]
     let addDownload: () -> Void
 
-    var hasCompleted: Bool {
-        dm.items.contains {
-            switch $0.status { case .done, .failed: return true; default: return false }
-        }
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             InputBar(urlText: $urlText, format: $format, quality: $quality, addDownload: addDownload)
@@ -627,19 +640,6 @@ struct DetailView: View {
             }
 
             StatusBar().environmentObject(dm)
-        }
-        .toolbar {
-            ToolbarItem {
-                if hasCompleted {
-                    Button { dm.clearCompleted() } label: {
-                        Text("Clear Completed")
-                            .font(.system(size: 12))
-                            .foregroundColor(.rFg3)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Remove done and failed items")
-                }
-            }
         }
     }
 }
@@ -692,6 +692,86 @@ struct FolderSetupView: View {
         }
         .frame(width: 440, height: 300)
         .preferredColorScheme(lightMode ? .light : .dark)
+    }
+}
+
+// MARK: - Window chrome
+/// Makes the title bar transparent and hides its title so the window's own dark
+/// background fills the top edge — removing the light system title-bar strip.
+struct WindowConfigurator: NSViewRepresentable {
+    var dark: Bool
+    var dm: DownloadManager
+    final class HostView: NSView {
+        var onWindow: ((NSWindow) -> Void)?
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let w = window { onWindow?(w) }
+        }
+    }
+    func makeNSView(context: Context) -> NSView {
+        let v = HostView()
+        v.onWindow = { apply(to: $0) }
+        return v
+    }
+    func updateNSView(_ nsView: NSView, context: Context) {
+        if let w = nsView.window { apply(to: w) }
+    }
+    private func apply(to window: NSWindow) {
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        let hex: UInt32 = dark ? 0x0B0B0B : 0xF5F5F7
+        window.backgroundColor = NSColor(
+            srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
+            green:   CGFloat((hex >>  8) & 0xFF) / 255,
+            blue:    CGFloat( hex        & 0xFF) / 255,
+            alpha: 1)
+        installPasteAccessory(window)
+    }
+    /// Adds the "Paste link" button as a custom titlebar accessory so it renders
+    /// in our theme with no Liquid Glass capsule (unlike a toolbar item).
+    private func installPasteAccessory(_ window: NSWindow) {
+        let id = NSUserInterfaceItemIdentifier("reelPasteLink")
+        if window.titlebarAccessoryViewControllers.contains(where: { $0.identifier == id }) { return }
+        let acc = NSTitlebarAccessoryViewController()
+        acc.identifier = id
+        acc.layoutAttribute = .trailing
+        let host = NSHostingView(rootView: PasteLinkBar().environmentObject(dm))
+        host.frame = NSRect(x: 0, y: 0, width: 130, height: 30)
+        acc.view = host
+        window.addTitlebarAccessoryViewController(acc)
+    }
+}
+
+/// Themed "Paste link" button shown in the title bar. Reads a URL from the
+/// clipboard and queues it instantly.
+struct PasteLinkBar: View {
+    @EnvironmentObject var dm: DownloadManager
+    @State private var added = false
+
+    var body: some View {
+        Button {
+            let s = (NSPasteboard.general.string(forType: .string) ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard s.lowercased().hasPrefix("http") else { return }
+            dm.add(url: s, format: .best, quality: .best)
+            added = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) { added = false }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: added ? "checkmark" : "doc.on.clipboard")
+                    .font(.system(size: 10, weight: .bold))
+                Text(added ? "Added" : "Paste link")
+                    .font(.system(size: 11.5, weight: .semibold))
+            }
+            .foregroundColor(added ? .rGreen : .rFg2)
+            .padding(.horizontal, 11).padding(.vertical, 4)
+            .background(Color.rSurface)
+            .overlay(Capsule().stroke(Color.rBorder, lineWidth: 1))
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .padding(.trailing, 12)
+        .help("Download a link from your clipboard")
     }
 }
 
@@ -758,6 +838,7 @@ struct ContentView: View {
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 720, minHeight: 480)
         .background(Color.rBg)
+        .background(WindowConfigurator(dark: !lightMode, dm: dm))
         .preferredColorScheme(lightMode ? .light : .dark)
         .task(id: lightMode) {
             // Drive the AppKit appearance directly so the custom NSColor-backed
