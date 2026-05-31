@@ -11,7 +11,6 @@
 		AA04={isa=PBXBuildFile;fileRef=FA04;};
 		AA10={isa=PBXBuildFile;fileRef=FA10;};
 		AA11={isa=PBXBuildFile;fileRef=FA11;};
-		AA20={isa=PBXBuildFile;fileRef=FA20;};
 /* End PBXBuildFile section */
 /* Begin PBXFileReference section */
 		FA01={isa=PBXFileReference;lastKnownFileType=sourcecode.swift;path=ReelApp.swift;sourceTree="<group>";};
@@ -20,14 +19,13 @@
 		FA04={isa=PBXFileReference;lastKnownFileType=sourcecode.swift;path=DownloadManager.swift;sourceTree="<group>";};
 		FA10={isa=PBXFileReference;lastKnownFileType=folder.assetcatalog;path=Assets.xcassets;sourceTree="<group>";};
 		FA11={isa=PBXFileReference;lastKnownFileType=text.plist.xml;path=Info.plist;sourceTree="<group>";};
-		FA20={isa=PBXFileReference;lastKnownFileType="compiled.mach-o.executable";path=ffmpeg;sourceTree="<group>";};
 		FAAPP={isa=PBXFileReference;explicitFileType=wrapper.application;includeInIndex=0;path="Reel.app";sourceTree=BUILT_PRODUCTS_DIR;};
 /* End PBXFileReference section */
 /* Begin PBXFrameworksBuildPhase section */
 		BPFWK={isa=PBXFrameworksBuildPhase;buildActionMask=2147483647;files=();runOnlyForDeploymentPostprocessing=0;};
 /* End PBXFrameworksBuildPhase section */
 /* Begin PBXGroup section */
-		GRPMAIN={isa=PBXGroup;children=(FA01,FA02,FA03,FA04,FA10,FA11,FA20);path=Reel;sourceTree="<group>";};
+		GRPMAIN={isa=PBXGroup;children=(FA01,FA02,FA03,FA04,FA10,FA11);path=Reel;sourceTree="<group>";};
 		GRPROOT={isa=PBXGroup;children=(GRPMAIN,GRPPROD);sourceTree="<group>";};
 		GRPPROD={isa=PBXGroup;children=(FAAPP);name=Products;sourceTree="<group>";};
 /* End PBXGroup section */
@@ -38,7 +36,7 @@
 		PRJMAIN={isa=PBXProject;attributes={BuildIndependentTargetsInParallel=1;LastSwiftUpdateCheck=1500;LastUpgradeCheck=1500;};buildConfigurationList=BCLPRJ;compatibilityVersion="Xcode 14.0";developmentRegion=en;hasScannedForEncodings=0;knownRegions=(en,Base);mainGroup=GRPROOT;productRefGroup=GRPPROD;projectDirPath="";projectRoot="";targets=(TGTMAIN);};
 /* End PBXProject section */
 /* Begin PBXResourcesBuildPhase section */
-		BPRES={isa=PBXResourcesBuildPhase;buildActionMask=2147483647;files=(AA10,AA11,AA20);runOnlyForDeploymentPostprocessing=0;};
+		BPRES={isa=PBXResourcesBuildPhase;buildActionMask=2147483647;files=(AA10,AA11);runOnlyForDeploymentPostprocessing=0;};
 /* End PBXResourcesBuildPhase section */
 /* Begin PBXSourcesBuildPhase section */
 		BPSRC={isa=PBXSourcesBuildPhase;buildActionMask=2147483647;files=(AA01,AA02,AA03,AA04);runOnlyForDeploymentPostprocessing=0;};

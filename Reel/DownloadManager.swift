@@ -102,16 +102,14 @@ class DownloadManager: ObservableObject {
 
         item.status = .fetching
 
-        let ffmpeg = findBin("ffmpeg")
         var args: [String] = [
             "--newline", "--progress", "--no-playlist",
-            // Parallelise DASH/HLS fragment downloads — large (4K) merges are
+            // Parallelise DASH/HLS fragment downloads — large (4K) downloads are
             // far too slow when fetched one fragment at a time.
             "--concurrent-fragments", "8",
             "-o", folder.path + "/%(title)s.%(ext)s"
         ]
-        if let ffmpeg { args += ["--ffmpeg-location", ffmpeg] }
-        args += formatArgs(for: item.format, quality: item.quality, hasFFmpeg: ffmpeg != nil)
+        args += formatArgs(for: item.format, quality: item.quality)
         args.append(item.url)
 
         let process = Process()
@@ -187,43 +185,25 @@ class DownloadManager: ObservableObject {
         }
         // Already downloaded
         if line.contains("has already been downloaded") { item.status = .done; item.progress = 1 }
-        // ffmpeg post-process
-        if line.hasPrefix("[ffmpeg]") { item.status = .converting; item.progress = 0.99 }
         // Collect error lines for better failure messages
-        if line.hasPrefix("ERROR:") || line.contains("not find ffmpeg") || line.contains("ffmpeg not found") {
+        if line.hasPrefix("ERROR:") {
             item.errorLines.append(line.replacingOccurrences(of: "ERROR: ", with: ""))
         }
     }
 
-    private func formatArgs(for format: DownloadFormat, quality: VideoQuality, hasFFmpeg: Bool) -> [String] {
+    private func formatArgs(for format: DownloadFormat, quality: VideoQuality) -> [String] {
         // Resolution cap applied to video streams, e.g. "[height<=1080]". Empty = highest available.
         let cap = quality.maxHeight.map { "[height<=\($0)]" } ?? ""
         switch format {
         case .best:
-            if hasFFmpeg {
-                return ["-f", "bestvideo\(cap)+bestaudio/best\(cap)/best", "--merge-output-format", "mp4"]
-            } else {
-                return ["-f", "bestvideo\(cap)+bestaudio/best\(cap)/best"]
-            }
+            return ["-f", "best\(cap)/best"]
         case .mp4:
-            if hasFFmpeg {
-                return ["-f", "bestvideo\(cap)[ext=mp4]+bestaudio[ext=m4a]/best\(cap)[ext=mp4]/best\(cap)/best", "--merge-output-format", "mp4"]
-            } else {
-                return ["-f", "best\(cap)[ext=mp4]/best\(cap)[vcodec!=none][acodec!=none]/best\(cap)/best"]
-            }
+            return ["-f", "best\(cap)[ext=mp4]/best\(cap)[vcodec!=none][acodec!=none]/best\(cap)/best"]
         case .mp3:
-            if hasFFmpeg {
-                return ["-x", "--audio-format", "mp3", "--audio-quality", "0"]
-            } else {
-                // -x requires ffmpeg; just grab the audio stream directly (m4a plays in Music.app)
-                return ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"]
-            }
+            // Grab the audio stream directly (m4a plays in Music.app)
+            return ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"]
         case .wav:
-            if hasFFmpeg {
-                return ["-x", "--audio-format", "wav"]
-            } else {
-                return ["-f", "bestaudio[ext=m4a]/bestaudio"]
-            }
+            return ["-f", "bestaudio[ext=m4a]/bestaudio"]
         }
     }
 

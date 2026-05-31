@@ -74,24 +74,16 @@ function findBin(name) {
 
 // ── yt-dlp format args ────────────────────────────────────────────────────────
 
-function formatArgs(format, hasFFmpeg) {
+function formatArgs(format) {
   switch (format) {
     case 'best':
-      return hasFFmpeg
-        ? ['-f', 'bestvideo+bestaudio/best', '--merge-output-format', 'mp4']
-        : ['-f', 'best[ext=mp4]/best[vcodec!=none][acodec!=none]/best'];
+      return ['-f', 'best/best'];
     case 'mp4':
-      return hasFFmpeg
-        ? ['-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', '--merge-output-format', 'mp4']
-        : ['-f', 'best[ext=mp4]/best[vcodec!=none][acodec!=none]/best'];
+      return ['-f', 'best[ext=mp4]/best[vcodec!=none][acodec!=none]/best'];
     case 'mp3':
-      return hasFFmpeg
-        ? ['-x', '--audio-format', 'mp3', '--audio-quality', '0']
-        : ['-f', 'bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio'];
+      return ['-f', 'bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio'];
     case 'wav':
-      return hasFFmpeg
-        ? ['-x', '--audio-format', 'wav']
-        : ['-f', 'bestaudio[ext=m4a]/bestaudio'];
+      return ['-f', 'bestaudio[ext=m4a]/bestaudio'];
     default: return [];
   }
 }
@@ -128,9 +120,7 @@ function parseLine(line, item) {
 
   if (t.includes('has already been downloaded')) { item.status = 'done'; item.progress = 1; }
 
-  if (t.startsWith('[ffmpeg]')) { item.status = 'converting'; item.progress = 0.99; }
-
-  if (t.startsWith('ERROR:') || t.includes('not find ffmpeg') || t.includes('ffmpeg not found')) {
+  if (t.startsWith('ERROR:')) {
     item._errorLines.push(t.replace(/^ERROR:\s*/, ''));
   }
 }
@@ -166,13 +156,11 @@ async function startDownload(item) {
   item.status = 'fetching';
   pushState();
 
-  const ffmpeg = findBin('ffmpeg');
   const outTpl = path.join(outputFolder, '%(title)s.%(ext)s');
   const args   = [
     '--newline', '--progress', '--no-playlist',
     '-o', outTpl,
-    ...(ffmpeg ? ['--ffmpeg-location', ffmpeg] : []),
-    ...formatArgs(item.format, !!ffmpeg),
+    ...formatArgs(item.format),
     item.url,
   ];
 
