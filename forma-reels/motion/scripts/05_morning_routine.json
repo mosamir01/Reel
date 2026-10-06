@@ -1,0 +1,15 @@
+{
+  "title": "How I stuck to a morning routine",
+  "voice": "af_heart",
+  "speed": 1.08,
+  "scenes": [
+    {"label": "// 01 — hook", "say": "I tried to build a morning routine for *two years.*", "visual": {"type": "clock", "title": "attempt #47", "icon": "😴", "from": 525, "to": 560, "fromLabel": "6 AM", "toLabel": "10 AM"}, "counter": {"name": "attempts", "from": 1, "to": 47}, "mood": "worried"},
+    {"label": "// 01 — hook", "say": "It *never* stuck.", "visual": "same", "counter": {"name": "attempts", "to": 47}, "mood": "worried"},
+    {"label": "// 02 — what changed", "say": "Here's what changed. I put every step in *Forma.*", "visual": {"type": "checklist", "title": "morning", "items": ["Wake up 6:30", "Big glass of water", "Stretch 5 min", "No phone 30 min"], "noCheck": true}, "mood": "smug"},
+    {"label": "// 03 — every morning", "say": "Forma *reminds* me,", "visual": {"type": "notify", "items": [["Forma", "Morning routine starts now ☀️"], ["Forma", "Water first 💧"]]}, "mood": "happy"},
+    {"label": "// 03 — every morning", "say": "I tick them off,", "visual": {"type": "checklist", "title": "morning", "items": ["Wake up 6:30", "Big glass of water", "Stretch 5 min", "No phone 30 min"]}, "mood": "happy"},
+    {"label": "// 03 — every morning", "say": "and by *eight AM*, my day's already a win.", "show": "and by *8 AM*, my day's already a win.", "visual": {"type": "clock", "title": "done by", "icon": "☀️", "from": 390, "to": 480}, "counter": {"name": "routine", "to": "4/4"}, "mood": "excited"},
+    {"label": "// 04 — the point", "say": "Small habits. Every day. That's how you *change.*", "visual": {"type": "heatmap", "title": "since june", "gaps": 0.08}, "counter": {"name": "mornings", "from": 0, "to": 112}, "mood": "happy"},
+    {"label": "// 05 — your turn", "theme": "dark", "say": "Try [Forma.] It's *free.*", "visual": {"type": "cta", "sub": "build your routine"}, "mood": "excited"}
+  ]
+}

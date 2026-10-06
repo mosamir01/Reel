@@ -1,0 +1,4 @@
+.kokoro/
+node_modules/
+renders/
+__pycache__/

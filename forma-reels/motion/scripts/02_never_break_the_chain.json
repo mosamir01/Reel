@@ -1,0 +1,16 @@
+{
+  "title": "Motivation isn't the trick",
+  "voice": "af_heart",
+  "speed": 1.08,
+  "scenes": [
+    {"label": "// 01 — hook", "say": "Motivation is *not* why people stick to habits.", "visual": {"type": "sticker", "text": "MOTIVATION ✗", "size": 110}, "mood": "smug"},
+    {"label": "// 01 — hook", "say": "It runs out by *Wednesday.*", "visual": {"type": "stats", "values": [95, 80, 34, 20, 12, 8, 5]}, "counter": {"name": "motivation", "from": 100, "to": 5, "suffix": "%"}, "mood": "worried"},
+    {"label": "// 02 — the trick", "say": "The real trick? You just don't want to break the *chain.*", "visual": {"type": "chain", "n": 7}, "mood": "happy"},
+    {"label": "// 03 — how", "say": "Drink water. Read ten pages. Walk.", "show": "Drink water. Read 10 pages. Walk.", "visual": {"type": "phone", "habits": ["Drink water", "Read 10 pages", "Walk 20 min"], "streak": 50}, "mood": "neutral"},
+    {"label": "// 03 — how", "say": "Nothing *crazy.* I just tick them off in Forma.", "visual": "same", "mood": "smug"},
+    {"label": "// 04 — the result", "say": "Every check-in fills my little grid,", "visual": {"type": "heatmap", "title": "50 days", "gaps": 0.04}, "counter": {"name": "days", "from": 0, "to": 50}, "mood": "happy"},
+    {"label": "// 04 — the result", "say": "and after *fifty days,* there's no way I'm skipping today.", "show": "and after *50 days,* there's no way I'm skipping today.", "visual": {"type": "streak", "from": 49, "to": 50}, "counter": {"name": "streak", "to": 50}, "mood": "excited"},
+    {"label": "// 05 — your turn", "theme": "dark", "say": "Start your [chain] today.", "visual": {"type": "sticker", "text": "DAY 1", "bg": "#c8f53a", "color": "#16161a", "shadow": "#ff2d78", "size": 150}, "mood": "serious"},
+    {"label": "// 05 — your turn", "theme": "dark", "say": "[Forma.] Free on the App Store.", "visual": {"type": "cta"}, "mood": "excited"}
+  ]
+}

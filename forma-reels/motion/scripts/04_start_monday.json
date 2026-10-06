@@ -1,0 +1,16 @@
+{
+  "title": "Stop waiting for Monday",
+  "voice": "af_heart",
+  "speed": 1.08,
+  "scenes": [
+    {"label": "// 01 — hook", "say": "If you keep saying *I'll start Monday,*", "visual": {"type": "calendar", "pages": ["MON", "MON", "MON"], "noToday": true}, "counter": {"name": "mondays missed", "from": 0, "to": 3}, "mood": "smug"},
+    {"label": "// 01 — hook", "say": "this one's for *you.*", "visual": "same", "counter": {"name": "mondays missed", "to": 3}, "mood": "serious"},
+    {"label": "// 02 — the lie", "say": "You don't need a new planner. Or a whole new *routine.*", "visual": {"type": "checklist", "title": "you don't need", "items": ["$40 planner", "5am club", "new you"], "noCheck": true}, "mood": "serious"},
+    {"label": "// 03 — the fix", "say": "Pick *one* habit. Just one.", "visual": {"type": "sticker", "text": "ONE HABIT", "size": 130}, "counter": {"name": "habits", "to": 1}, "mood": "smug"},
+    {"label": "// 03 — the fix", "say": "Put it in Forma.", "visual": {"type": "add", "text": "Walk 20 min"}, "counter": {"name": "habits", "to": 1}, "mood": "happy"},
+    {"label": "// 03 — the fix", "say": "Check it off every day. That's *it.*", "visual": {"type": "phone", "habits": ["Walk 20 min"], "streak": 1}, "counter": {"name": "habits", "to": 1}, "mood": "happy"},
+    {"label": "// 04 — a month later", "say": "In a month, you'll look at your streak and be *shocked.*", "visual": {"type": "heatmap", "title": "30 days", "weeks": 5, "gaps": 0.02}, "counter": {"name": "streak", "from": 0, "to": 30}, "mood": "excited"},
+    {"label": "// 05 — today", "theme": "dark", "say": "Don't wait for [Monday.]", "visual": {"type": "calendar", "pages": ["MON"]}, "mood": "serious"},
+    {"label": "// 05 — today", "theme": "dark", "say": "Download [Forma] and start *today.*", "visual": {"type": "cta"}, "mood": "excited"}
+  ]
+}

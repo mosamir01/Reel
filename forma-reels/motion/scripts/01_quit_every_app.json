@@ -1,0 +1,18 @@
+{
+  "title": "You quit every habit app",
+  "voice": "af_heart",
+  "speed": 1.08,
+  "scenes": [
+    {"label": "// 01 — hook", "say": "You've downloaded *ten* habit apps,", "visual": {"type": "apps", "n": 10}, "counter": {"name": "apps", "from": 0, "to": 10}, "mood": "smug"},
+    {"label": "// 01 — hook", "say": "and quit every single one within a *week.*", "visual": "same", "counter": {"name": "quit", "from": 0, "to": 10, "suffix": "/10"}, "mood": "worried"},
+    {"label": "// 02 — the problem", "say": "Too many buttons. Too many settings. Too much *guilt.*", "visual": {"type": "checklist", "title": "why you quit", "items": ["47 settings", "streak shaming", "$9.99/mo paywall"], "noCheck": true}, "mood": "serious"},
+    {"label": "// 03 — the fix", "say": "Then I found *Forma.*", "visual": {"type": "phone", "checks": 0}, "mood": "happy"},
+    {"label": "// 03 — the fix", "say": "Open it. Tap your habit. Done.", "visual": {"type": "phone"}, "counter": {"name": "time", "to": "2s"}, "mood": "happy"},
+    {"label": "// 03 — the fix", "say": "Literally *two seconds.*", "visual": {"type": "sticker", "text": "2 SECONDS", "size": 140}, "counter": {"name": "time", "to": "2s"}, "mood": "smug"},
+    {"label": "// 04 — the catch", "say": "And watching your streak grow every day?", "visual": {"type": "streak", "from": 0, "to": 43}, "counter": {"name": "streak", "from": 0, "to": 43}, "mood": "excited"},
+    {"label": "// 04 — the catch", "say": "[Weirdly] addictive.", "visual": "same", "counter": {"name": "streak", "to": 43}, "mood": "smug"},
+    {"label": "// 04 — the catch", "say": "I'm on *day forty-three* now.", "show": "I'm on *day 43* now.", "visual": {"type": "heatmap", "gaps": 0.05}, "counter": {"name": "days", "from": 0, "to": 43}, "mood": "happy"},
+    {"label": "// 05 — your turn", "theme": "dark", "say": "If you keep giving up on your habits,", "visual": {"type": "sticker", "text": "LAST APP", "bg": "#c8f53a", "color": "#16161a", "shadow": "#ff2d78", "size": 130}, "mood": "serious"},
+    {"label": "// 05 — your turn", "theme": "dark", "say": "try [Forma.] It's *free.*", "visual": {"type": "cta"}, "mood": "excited"}
+  ]
+}

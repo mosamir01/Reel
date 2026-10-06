@@ -1,0 +1,558 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: Grotesk; src: url(assets/fonts/space-grotesk-latin-500-normal.woff2); font-weight: 500; }
+@font-face { font-family: Grotesk; src: url(assets/fonts/space-grotesk-latin-600-normal.woff2); font-weight: 600; }
+@font-face { font-family: Grotesk; src: url(assets/fonts/space-grotesk-latin-700-normal.woff2); font-weight: 700; }
+@font-face { font-family: Serif; src: url(assets/fonts/instrument-serif-latin-400-italic.woff2); font-style: italic; }
+@font-face { font-family: Mono; src: url(assets/fonts/jetbrains-mono-latin-400-normal.woff2); font-weight: 400; }
+@font-face { font-family: Mono; src: url(assets/fonts/jetbrains-mono-latin-500-normal.woff2); font-weight: 500; }
+
+:root { --ink: #16161a; --paper: #f1efea; --accent: #ff5a36; --lime: #c8f53a; --pink: #ff2d78; --muted: #8a8780; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--paper); }
+#stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; font-family: Grotesk, sans-serif; color: var(--ink); }
+
+/* backgrounds: light paper with fine dot grain, dark with neon glow */
+.bg { position: absolute; inset: 0; }
+#bgLight { background: radial-gradient(circle, rgba(0,0,0,.07) 1px, transparent 1.3px) 0 0 / 7px 7px, var(--paper); }
+#bgDark { background: radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1.3px) 0 0 / 7px 7px,
+  radial-gradient(60% 40% at 85% 95%, rgba(255,45,120,.55), transparent 70%),
+  radial-gradient(50% 30% at 0% 0%, rgba(200,245,58,.35), transparent 70%), #0d0e10; opacity: 0; }
+#glow { position: absolute; width: 900px; height: 900px; left: 300px; top: 1100px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,90,54,.35), transparent 65%); opacity: 0; }
+
+.hud { position: absolute; top: 120px; font: 500 30px Mono, monospace; letter-spacing: .02em; color: var(--muted); }
+#label { left: 110px; }
+#counter { right: 110px; text-transform: uppercase; }
+#counter b { color: var(--accent); font-weight: 500; }
+
+#headline { position: absolute; left: 110px; right: 110px; top: 210px; font-weight: 600; font-size: 82px; line-height: 1.1; letter-spacing: -.025em; }
+#headline .w { display: inline-block; white-space: pre; will-change: transform, opacity; }
+#headline .acc { font-family: Serif; font-style: italic; font-weight: 400; color: var(--accent); font-size: 1.12em; letter-spacing: -.01em; line-height: .9; }
+#headline .hi { color: var(--accent); }
+.dark #headline .hi { color: var(--lime); }
+.dark #headline, .dark .hud, .dark .on-bg { color: #f4f3ef; }
+.dark .hud { color: #8f8f8f; }
+
+#visuals { position: absolute; inset: 0; pointer-events: none; }
+.vis { position: absolute; will-change: transform, opacity; }
+.card { background: #fff; border-radius: 34px; box-shadow: 0 30px 60px -20px rgba(20,20,30,.25), 0 0 0 2px rgba(0,0,0,.04); }
+.dark .card { background: #17181c; color: #f4f3ef; box-shadow: 0 30px 80px -20px rgba(0,0,0,.6), 0 0 0 2px rgba(255,255,255,.06); }
+.mono { font-family: Mono, monospace; }
+.tag { position: absolute; font: 500 26px Mono; padding: 10px 20px; border-radius: 40px; background: var(--ink); color: #fff; white-space: nowrap; }
+
+#avatar { position: absolute; width: 600px; height: 769px; left: 500px; top: 1180px; will-change: transform; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg" id="bgLight"></div>
+  <div class="bg" id="bgDark"></div>
+  <div id="glow"></div>
+  <div class="hud" id="label"></div>
+  <div class="hud" id="counter"></div>
+  <div id="headline"></div>
+  <div id="visuals"></div>
+  <svg id="avatar" viewBox="0 0 640 820"></svg>
+</div>
+<script>
+// ---------- easing helpers ----------
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const prog = (t, s, d) => clamp((t - s) / d);
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const back = t => { const c = 1.9; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+// damped spring 0 -> 1
+const spring = t => t <= 0 ? 0 : 1 - Math.exp(-7 * t) * Math.cos(13 * t);
+const $ = s => document.querySelector(s);
+const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+
+const ICONS = {
+  check: '<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  flame: '<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M12 2c1 4 5 5.5 5 11a5 5 0 0 1-10 0c0-2.5 1.3-4 2.5-5 .2 2 1 3 2 3.3C11 8.5 10.5 5.5 12 2z" fill="currentColor"/></svg>',
+  x: '<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zm-2.5 15a2.5 2.5 0 0 0 5 0" fill="currentColor"/></svg>',
+  star: '<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z" fill="currentColor"/></svg>',
+};
+// Forma logo mark: rounded tile with a stacked "F" built from habit bars
+const LOGO = (s) => `<div style="width:${s}px;height:${s}px;border-radius:${s * .26}px;background:linear-gradient(145deg,#ff7a4d,#ff4a2a);display:grid;place-items:center;box-shadow:0 ${s * .12}px ${s * .3}px -${s * .1}px rgba(255,74,42,.6)">
+  <svg viewBox="0 0 40 40" width="${s * .56}" height="${s * .56}"><rect x="8" y="7" width="24" height="7" rx="3.5" fill="#fff"/><rect x="8" y="17" width="17" height="7" rx="3.5" fill="#fff" opacity=".85"/><rect x="8" y="27" width="7" height="7" rx="3.5" fill="#fff" opacity=".7"/></svg></div>`;
+
+// ---------- visuals: each has build(params) -> element, update(el, lt, dur, params) ----------
+const V = {};
+
+// grid of other habit apps getting crossed out one by one
+V.apps = {
+  build(p) {
+    const e = h('div', 'vis'); e.style.cssText = 'left:110px;top:640px;width:860px;display:grid;grid-template-columns:repeat(5,1fr);gap:26px';
+    const cols = ['#7c6cf2', '#2bb673', '#f2b33d', '#3d8ef2', '#e8576b', '#25b5c4', '#9b59b6', '#f27d3d', '#5c6b7a', '#d4a017', '#6c8cff', '#e0559f'];
+    const glyphs = ['✓', '◎', '★', '▲', '♥', '◆', '●', '✦', '■', '☀', '☾', '✿'];
+    for (let i = 0; i < (p.n || 10); i++) {
+      const c = h('div', '', `<div style="position:absolute;inset:0;border-radius:36px;background:${cols[i % 12]};display:grid;place-items:center;color:#fff;font-size:70px">${glyphs[i % 12]}</div>
+        <div class="x" style="position:absolute;inset:-6px;color:#ff3b30;opacity:0">${ICONS.x}</div>
+        <div class="mono" style="position:absolute;top:166px;width:100%;text-align:center;font-size:20px;color:#8a8780">day ${[3, 5, 2, 6, 4, 1, 7, 2, 5, 3, 4, 2][i % 12]}</div>`);
+      c.style.cssText = 'position:relative;aspect-ratio:1;';
+      e.append(c);
+    }
+    return e;
+  },
+  update(e, t, d, p) {
+    [...e.children].forEach((c, i) => {
+      const s = spring(t - i * .05);
+      c.style.transform = `scale(${lerp(.4, 1, s)})`; c.style.opacity = clamp(s * 2);
+      const xs = .5 + i * (d - .9) / e.children.length;
+      const k = prog(t, xs, .25);
+      c.querySelector('.x').style.opacity = k;
+      c.querySelector('.x').style.transform = `scale(${lerp(1.8, 1, easeOut(k))})`;
+      c.firstElementChild.style.filter = `grayscale(${k}) brightness(${1 - k * .15})`;
+      c.firstElementChild.style.opacity = 1 - k * .5;
+    });
+  }
+};
+
+// the Forma app itself: today list with habits getting checked off
+V.phone = {
+  build(p) {
+    const e = h('div', 'vis');
+    e.style.cssText = 'left:120px;top:620px;width:470px;height:900px;border-radius:70px;background:#111;padding:16px;box-shadow:0 50px 90px -30px rgba(0,0,0,.45)';
+    const habits = p.habits || ['Drink water', 'Read 10 pages', 'Walk 20 min', 'No phone in bed'];
+    e.innerHTML = `<div style="position:relative;width:100%;height:100%;border-radius:56px;background:#fbfaf7;color:#16161a;overflow:hidden;padding:70px 34px 0">
+      <div style="position:absolute;top:22px;left:50%;transform:translateX(-50%);width:130px;height:36px;border-radius:20px;background:#111"></div>
+      <div class="mono" style="font-size:20px;color:#8a8780">${p.date || 'TUESDAY · OCT 6'}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 26px">
+        <div style="font-weight:700;font-size:50px;letter-spacing:-.03em">Today</div>
+        <div style="display:flex;align-items:center;gap:6px;background:#fff1ec;color:#ff5a36;border-radius:30px;padding:8px 16px;font-weight:700;font-size:26px"><span style="width:26px;height:26px">${ICONS.flame}</span><span class="streak">${p.streak || 43}</span></div>
+      </div>
+      ${habits.map((x, i) => `<div class="hb" style="display:flex;align-items:center;gap:20px;background:#fff;border-radius:26px;padding:24px 22px;margin-bottom:16px;box-shadow:0 2px 0 rgba(0,0,0,.04),0 0 0 2px #eeebe4">
+        <div class="ck" style="flex:none;width:52px;height:52px;border-radius:50%;border:4px solid #dcd8cf;color:#fff;padding:7px"></div>
+        <div style="flex:1"><div style="font-weight:600;font-size:28px">${x}</div><div class="mono" style="font-size:18px;color:#a09d95;margin-top:4px">${[12, 43, 8, 21, 5, 30][i % 6]} day streak</div></div></div>`).join('')}
+      <div style="position:absolute;bottom:34px;left:34px;right:34px;height:16px;border-radius:8px;background:#eeebe4"><div class="bar" style="height:100%;border-radius:8px;background:#ff5a36;width:0"></div></div>
+    </div>
+    <div class="finger" style="position:absolute;width:90px;height:90px;border-radius:50%;background:rgba(255,90,54,.25);border:4px solid rgba(255,90,54,.7);opacity:0"></div>`;
+    return e;
+  },
+  update(e, t, d, p) {
+    const s = spring(t);
+    e.style.transform = `translateY(${lerp(500, 0, s)}px) rotate(${lerp(8, -3, s)}deg)`;
+    const hbs = [...e.querySelectorAll('.hb')], n = hbs.length;
+    const checks = p.checks == null ? n : p.checks;
+    let done = 0;
+    const f = e.querySelector('.finger');
+    f.style.opacity = 0;
+    hbs.forEach((hb, i) => {
+      const at = .6 + i * Math.max(.35, (d - 1.2) / Math.max(1, checks));
+      const k = i < checks ? prog(t, at, .18) : 0;
+      if (k > 0) done++;
+      const ck = hb.querySelector('.ck');
+      ck.innerHTML = k > 0 ? ICONS.check : '';
+      ck.style.background = k > 0 ? '#ff5a36' : 'transparent';
+      ck.style.borderColor = k > 0 ? '#ff5a36' : '#dcd8cf';
+      ck.style.transform = `scale(${k > 0 ? lerp(1.35, 1, easeOut(k)) : 1})`;
+      hb.style.opacity = k > 0 ? .6 + (1 - k) * .4 : 1;
+      if (i < checks && t > at - .3 && t < at + .35) {
+        const r = hb.offsetTop + hb.offsetHeight / 2 + 16 - 45, near = 1 - Math.abs(t - at) / .35;
+        f.style.opacity = clamp(near * 1.5); f.style.left = (16 + 34 + 26 - 19) + 'px'; f.style.top = r + 'px';
+        f.style.transform = `scale(${lerp(1.3, .85, clamp(near))})`;
+      }
+    });
+    e.querySelector('.bar').style.width = (done / n * 100) + '%';
+  }
+};
+
+// big streak counter
+V.streak = {
+  build(p) {
+    const e = h('div', 'vis card');
+    e.style.cssText += ';left:110px;top:640px;width:620px;padding:46px 50px';
+    e.innerHTML = `<div class="mono" style="font-size:24px;color:#8a8780">// current streak</div>
+      <div style="display:flex;align-items:flex-end;gap:20px;margin-top:10px">
+        <div style="width:120px;height:150px;color:#ff5a36" class="fl">${ICONS.flame}</div>
+        <div class="num" style="font-weight:700;font-size:200px;line-height:.85;letter-spacing:-.05em">0</div>
+        <div style="font-weight:600;font-size:40px;margin-bottom:18px;color:#8a8780">days</div></div>
+      <div style="display:flex;gap:14px;margin-top:38px">${'MTWTFSS'.split('').map(x => `<div style="flex:1;text-align:center"><div class="dd" style="aspect-ratio:1;border-radius:50%;background:#eeebe4;color:#fff;padding:12px"></div><div class="mono" style="font-size:20px;color:#a09d95;margin-top:8px">${x}</div></div>`).join('')}</div>`;
+    return e;
+  },
+  update(e, t, d, p) {
+    const s = spring(t);
+    e.style.transform = `translateY(${lerp(120, 0, s)}px) scale(${lerp(.85, 1, s)}) rotate(${lerp(-4, -1.5, s)}deg)`; e.style.opacity = clamp(t * 4);
+    const k = easeInOut(prog(t, .2, Math.min(d - .4, 2.2)));
+    e.querySelector('.num').textContent = Math.round(lerp(p.from || 0, p.to || 43, k));
+    e.querySelector('.fl').style.transform = `scale(${1 + .06 * Math.sin(t * 9)}) rotate(${3 * Math.sin(t * 5)}deg)`;
+    e.querySelectorAll('.dd').forEach((dd, i) => { const on = t > .4 + i * .18; dd.style.background = on ? '#ff5a36' : '#eeebe4'; dd.innerHTML = on ? ICONS.check : ''; });
+  }
+};
+
+// contribution-style heatmap filling in
+V.heatmap = {
+  build(p) {
+    const e = h('div', 'vis card');
+    const cols = p.weeks || 12;
+    e.style.cssText += `;left:110px;top:640px;width:${Math.min(860, 88 + cols * 61)}px;padding:40px 44px`;
+    let cells = '';
+    for (let c = 0; c < cols; c++) for (let r = 0; r < 7; r++) cells += `<div class="c" data-i="${c * 7 + r}" style="aspect-ratio:1;border-radius:9px;background:#eeebe4"></div>`;
+    e.innerHTML = `<div style="display:flex;justify-content:space-between"><div class="mono" style="font-size:24px;color:#8a8780">// ${p.title || 'last 12 weeks'}</div><div class="mono pct" style="font-size:24px;color:#ff5a36">0%</div></div>
+      <div style="display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,52px);grid-auto-columns:52px;gap:9px;margin-top:26px">${cells}</div>`;
+    return e;
+  },
+  update(e, t, d, p) {
+    const s = spring(t); e.style.transform = `translateY(${lerp(140, 0, s)}px) rotate(${lerp(3, 1, s)}deg)`; e.style.opacity = clamp(t * 4);
+    const cs = e.querySelectorAll('.c'), n = cs.length, k = prog(t, .2, d - .6);
+    let on = 0;
+    cs.forEach((c, i) => {
+      const seed = Math.sin(i * 12.9898) * 43758.5453 % 1, miss = Math.abs(seed) < (p.gaps == null ? .12 : p.gaps) && i < n * .5;
+      const lit = i / n < k && !miss; if (lit) on++;
+      const lvl = .55 + Math.abs(seed) * .45;
+      c.style.background = lit ? `rgba(255,90,54,${lvl})` : '#eeebe4';
+    });
+    e.querySelector('.pct').textContent = Math.round(on / n * 100) + '%';
+  }
+};
+
+// home screen with the Forma widget
+V.widget = {
+  build(p) {
+    const e = h('div', 'vis');
+    e.style.cssText = 'left:120px;top:600px;width:470px;height:900px;border-radius:70px;background:#111;padding:16px;box-shadow:0 50px 90px -30px rgba(0,0,0,.45)';
+    const ic = ['#34c759', '#0a84ff', '#ff9f0a', '#5e5ce6', '#ff375f', '#64d2ff', '#30d158', '#bf5af2'];
+    e.innerHTML = `<div style="position:relative;width:100%;height:100%;border-radius:56px;overflow:hidden;background:linear-gradient(160deg,#3a3f8f,#c0587a 60%,#f2a65a);padding:90px 34px 0">
+      <div style="position:absolute;top:22px;left:50%;transform:translateX(-50%);width:130px;height:36px;border-radius:20px;background:#111"></div>
+      <div class="wg" style="background:rgba(255,255,255,.93);border-radius:40px;padding:28px;display:flex;gap:24px;align-items:center">
+        <svg viewBox="0 0 100 100" width="160" height="160"><circle cx="50" cy="50" r="40" fill="none" stroke="#eeebe4" stroke-width="13"/><circle class="ring" cx="50" cy="50" r="40" fill="none" stroke="#ff5a36" stroke-width="13" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3" transform="rotate(-90 50 50)"/><text class="rt" x="50" y="58" text-anchor="middle" font-family="Grotesk" font-weight="700" font-size="24" fill="#16161a">0/4</text></svg>
+        <div style="flex:1"><div style="display:flex;align-items:center;gap:8px">${LOGO(34)}<b style="font-size:24px">Forma</b></div>
+        ${['Water', 'Read', 'Walk', 'Stretch'].map(x => `<div class="wi" style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:600;font-size:22px"><span class="wd" style="width:22px;height:22px;border-radius:50%;border:3px solid #dcd8cf"></span>${x}</div>`).join('')}</div></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:26px 22px;margin-top:40px">${ic.map(c => `<div style="aspect-ratio:1;border-radius:22px;background:${c};opacity:.9"></div>`).join('')}</div>
+    </div>`;
+    return e;
+  },
+  update(e, t, d, p) {
+    const s = spring(t); e.style.transform = `translateY(${lerp(500, 0, s)}px) rotate(${lerp(-8, 2, s)}deg)`;
+    const wg = e.querySelector('.wg'), ws = spring(t - .35);
+    wg.style.transform = `scale(${lerp(.6, 1, ws)})`; wg.style.opacity = clamp((t - .35) * 4);
+    const k = Math.floor(clamp((t - .8) / Math.max(.4, (d - 1.2) / 3), 0, 3));
+    const r = lerp(0, k / 4, 1);
+    e.querySelector('.ring').setAttribute('stroke-dashoffset', 251.3 * (1 - r));
+    e.querySelector('.rt').textContent = `${k}/4`;
+    e.querySelectorAll('.wd').forEach((w, i) => { w.style.background = i < k ? '#ff5a36' : 'transparent'; w.style.borderColor = i < k ? '#ff5a36' : '#dcd8cf'; });
+  }
+};
+
+// weekly stats bars with the weak day called out
+V.stats = {
+  build(p) {
+    const e = h('div', 'vis card');
+    e.style.cssText += ';left:110px;top:640px;width:820px;padding:40px 46px 34px';
+    const vals = p.values || [92, 88, 95, 41, 86, 70, 90], days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], weak = vals.indexOf(Math.min(...vals));
+    e.innerHTML = `<div class="mono" style="font-size:24px;color:#8a8780">// completion by day</div>
+      <div style="display:flex;align-items:flex-end;gap:22px;height:330px;margin-top:30px">${vals.map((v, i) => `<div style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative">
+        <div class="b" data-v="${v}" style="width:100%;border-radius:16px;background:${i === weak ? '#ff5a36' : '#16161a'};height:0"></div>
+        ${i === weak ? '<div class="wk tag" style="top:-10px;left:50%;background:#ff5a36;font-size:22px">slump day</div>' : ''}</div>`).join('')}</div>
+      <div style="display:flex;gap:22px;margin-top:14px">${days.map(x => `<div class="mono" style="flex:1;text-align:center;font-size:20px;color:#a09d95">${x}</div>`).join('')}</div>`;
+    return e;
+  },
+  update(e, t, d, p) {
+    const s = spring(t); e.style.transform = `translateY(${lerp(140, 0, s)}px) rotate(${lerp(-3, -1, s)}deg)`; e.style.opacity = clamp(t * 4);
+    e.querySelectorAll('.b').forEach((b, i) => b.style.height = (+b.dataset.v * spring(t - .2 - i * .07)) + '%');
+    const wk = e.querySelector('.wk'); if (wk) { const k = spring(t - 1.2); wk.style.opacity = clamp((t - 1.2) * 5); wk.style.transform = `translate(-50%,-100%) rotate(-6deg) scale(${lerp(.3, 1, k)})`; }
+  }
+};
+
+// "I'll start Monday" calendar pages that keep getting crossed out
+V.calendar = {
+  build(p) {
+    const e = h('div', 'vis'); e.style.cssText = 'left:120px;top:660px;width:800px;height:560px';
+    const pages = p.pages || ['MON', 'MON', 'MON'];
+    e.innerHTML = pages.map((x, i) => `<div class="pg card" style="position:absolute;left:${i * 210}px;top:${i * 30}px;width:330px;height:420px;overflow:hidden">
+      <div style="background:#ff5a36;color:#fff;font:500 24px Mono;padding:18px 26px">${['JAN', 'FEB', 'MAR', 'APR'][i % 4]} · WEEK ${[1, 6, 11, 15][i % 4]}</div>
+      <div style="text-align:center;font-weight:700;font-size:140px;letter-spacing:-.04em;margin-top:40px">${x}</div>
+      <div class="mono" style="text-align:center;font-size:24px;color:#8a8780">"i'll start then"</div>
+      <div class="strike" style="position:absolute;left:30px;top:220px;height:14px;border-radius:7px;background:#ff3b30;width:0;transform:rotate(-12deg)"></div></div>`).join('') +
+      `<div class="today tag" style="left:470px;top:420px;font-size:44px;padding:20px 36px;background:#16161a">TODAY →</div>`;
+    return e;
+  },
+  update(e, t, d, p) {
+    const pgs = e.querySelectorAll('.pg'), n = pgs.length;
+    pgs.forEach((g, i) => {
+      const at = i * .35, s = spring(t - at);
+      g.style.transform = `translateY(${lerp(200, 0, s)}px) rotate(${lerp(-10, [-6, 3, -2, 4][i % 4], s)}deg)`; g.style.opacity = clamp((t - at) * 5);
+      g.querySelector('.strike').style.width = (300 * easeOut(prog(t, at + .45, .3))) + 'px';
+    });
+    const td = e.querySelector('.today'), k = spring(t - Math.min(d - .8, .4 + n * .45));
+    td.style.opacity = clamp(k * 3); if (document.body.classList.contains('dark')) { td.style.background = '#c8f53a'; td.style.color = '#16161a'; } td.style.transform = `rotate(-5deg) scale(${lerp(.2, 1, k)})`;
+    if (p.noToday) td.style.display = 'none';
+  }
+};
+
+// alarm style clock card ticking forward
+V.clock = {
+  build(p) {
+    const e = h('div', 'vis card'); e.style.cssText += ';left:250px;top:660px;width:580px;padding:40px 46px';
+    e.innerHTML = `<div style="display:flex;justify-content:space-between"><div class="mono" style="font-size:24px;color:#8a8780">// ${p.title || 'morning'}</div><div style="font-size:34px">${p.icon || '☀️'}</div></div>
+      <div style="display:flex;align-items:baseline;justify-content:center;gap:10px;margin:18px 0 24px"><div class="tm" style="font-weight:700;font-size:150px;letter-spacing:-.04em;font-variant-numeric:tabular-nums">6:30</div><div style="font-weight:700;font-size:46px;color:#ff5a36">AM</div></div>
+      <div style="height:10px;border-radius:5px;background:#eeebe4;position:relative"><div class="pb" style="position:absolute;inset:0;width:0;border-radius:5px;background:#ff5a36"></div></div>
+      <div class="mono" style="display:flex;justify-content:space-between;font-size:20px;color:#a09d95;margin-top:10px"><span>${p.fromLabel || '6 AM'}</span><span>${p.toLabel || '8 AM'}</span></div>`;
+    return e;
+  },
+  update(e, t, d, p) {
+    const s = spring(t); e.style.transform = `translateY(${lerp(140, 0, s)}px) rotate(${lerp(4, 1.5, s)}deg)`; e.style.opacity = clamp(t * 4);
+    const [a, b] = [p.from || 390, p.to || 478], k = easeInOut(prog(t, .2, d - .5)), m = Math.round(lerp(a, b, k));
+    e.querySelector('.tm').textContent = `${Math.floor(m / 60) % 12 || 12}:${String(m % 60).padStart(2, '0')}`;
+    e.querySelector('.pb').style.width = (clamp(lerp(.08, 1, k)) * 100) + '%';
+  }
+};
+
+// checklist card (routine steps)
+V.checklist = {
+  build(p) {
+    const e = h('div', 'vis card'); e.style.cssText += ';left:110px;top:620px;width:640px;padding:40px 44px';
+    const items = p.items || ['Wake up', 'Water', 'Stretch'];
+    e.innerHTML = `<div class="mono" style="font-size:24px;color:#8a8780">// ${p.title || 'routine'}</div>` + items.map(x => `<div class="it" style="display:flex;align-items:center;gap:24px;margin-top:26px;font-weight:600;font-size:44px;letter-spacing:-.02em">
+      <div class="ck" style="flex:none;width:62px;height:62px;border-radius:18px;border:5px solid #dcd8cf;color:#fff;padding:8px"></div><span class="tx" style="position:relative">${x}</span></div>`).join('');
+    return e;
+  },
+  update(e, t, d, p) {
+    const s = spring(t); e.style.transform = `translateY(${lerp(140, 0, s)}px) rotate(${lerp(-4, -1.5, s)}deg)`; e.style.opacity = clamp(t * 4);
+    const its = e.querySelectorAll('.it'), n = its.length;
+    its.forEach((it, i) => {
+      const appear = spring(t - .1 - i * .08); it.style.opacity = clamp(appear * 2); it.style.transform = `translateX(${lerp(-40, 0, appear)}px)`;
+      const at = .5 + i * (d - 1) / n, k = p.noCheck ? 0 : prog(t, at, .15), ck = it.querySelector('.ck');
+      ck.innerHTML = k > 0 ? ICONS.check : ''; ck.style.background = k > 0 ? '#ff5a36' : 'transparent'; ck.style.borderColor = k > 0 ? '#ff5a36' : '#dcd8cf';
+      ck.style.transform = `scale(${k > 0 ? lerp(1.4, 1, easeOut(k)) : 1})`;
+      it.querySelector('.tx').style.color = k > 0 ? '#a09d95' : '';
+    });
+  }
+};
+
+// big rotated sticker, like "ONE RULE"
+V.sticker = {
+  build(p) {
+    const e = h('div', 'vis'); e.style.cssText = `left:0;right:0;top:${p.top || 760}px;display:flex;justify-content:center`;
+    e.innerHTML = `<div class="st" style="background:${p.bg || '#16161a'};color:${p.color || '#fff'};font-weight:700;font-style:italic;font-size:${p.size || 120}px;letter-spacing:-.03em;padding:24px 56px;border-radius:24px;box-shadow:10px 14px 0 ${p.shadow || '#ff5a36'};white-space:nowrap">${p.text}</div>`;
+    return e;
+  },
+  update(e, t) {
+    const s = spring(t); const st = e.firstElementChild;
+    st.style.transform = `rotate(${lerp(-18, -6, s)}deg) scale(${lerp(2.2, 1, s)})`; st.style.opacity = clamp(t * 6);
+  }
+};
+
+// stacked reminders dropping in
+V.notify = {
+  build(p) {
+    const e = h('div', 'vis'); e.style.cssText = 'left:110px;top:640px;width:860px;color:#16161a';
+    const items = p.items || [['Forma', 'Time to read 10 pages 📖']];
+    e.innerHTML = items.map(([a, b]) => `<div class="nt" style="display:flex;gap:22px;align-items:center;background:rgba(255,255,255,.92);border-radius:36px;padding:26px 30px;margin-bottom:22px;box-shadow:0 24px 50px -20px rgba(20,20,30,.3),0 0 0 2px rgba(0,0,0,.04)">
+      ${LOGO(84)}<div style="flex:1"><div style="display:flex;justify-content:space-between"><b style="font-size:30px">${a}</b><span class="mono" style="font-size:22px;color:#a09d95">now</span></div>
+      <div style="font-size:30px;margin-top:4px;color:#3a3a40">${b}</div></div></div>`).join('');
+    return e;
+  },
+  update(e, t, d) {
+    e.querySelectorAll('.nt').forEach((n, i) => { const s = spring(t - i * Math.min(.6, d / 4)); n.style.transform = `translateY(${lerp(-260, 0, s)}px) scale(${lerp(.9, 1, s)})`; n.style.opacity = clamp(s * 2); });
+  }
+};
+
+// chain of days with the flame at the end, "don't break the chain"
+V.chain = {
+  build(p) {
+    const e = h('div', 'vis'); e.style.cssText = 'left:90px;top:700px;width:900px;height:400px';
+    const n = p.n || 7;
+    let html = '';
+    for (let i = 0; i < n; i++) {
+      const x = i * 128, y = 120 + Math.sin(i * .9) * 50;
+      html += `<div class="lk" style="position:absolute;left:${x}px;top:${y}px;width:110px;height:110px;border-radius:50%;background:#ff5a36;color:#fff;padding:24px;box-shadow:0 14px 30px -10px rgba(255,90,54,.7)">${i === n - 1 ? ICONS.flame : ICONS.check}</div>`;
+    }
+    e.innerHTML = html + `<div class="tag nb" style="left:${(n - 1) * 128 - 160}px;top:0px;font-size:28px">don't break it</div>`;
+    return e;
+  },
+  update(e, t, d) {
+    const lks = e.querySelectorAll('.lk');
+    lks.forEach((l, i) => { const s = spring(t - .1 - i * .14); l.style.transform = `scale(${s})`; });
+    const nb = e.querySelector('.nb'), k = spring(t - .2 - lks.length * .14); nb.style.opacity = clamp(k * 3); nb.style.transform = `rotate(-4deg) scale(${lerp(.3, 1, k)})`;
+  }
+};
+
+// App Store style end card
+V.cta = {
+  build(p) {
+    const e = h('div', 'vis on-bg'); e.style.cssText = 'left:0;right:0;top:600px;display:flex;flex-direction:column;align-items:flex-start;padding-left:110px';
+    e.innerHTML = `<div class="lg">${LOGO(230)}</div>
+      <div class="nm" style="font-weight:700;font-size:100px;letter-spacing:-.04em;margin-top:30px">Forma</div>
+      <div class="sub mono" style="font-size:28px;color:#8a8780;margin-top:4px">${p.sub || 'habit tracker'}</div>
+      <div class="stars" style="display:flex;gap:6px;color:#ffb800;margin-top:22px">${('<div style="width:40px;height:40px">' + ICONS.star + '</div>').repeat(5)}</div>
+      <div class="btn" style="margin-top:34px;background:#16161a;color:#fff;font-weight:700;font-size:42px;padding:26px 60px;border-radius:60px;box-shadow:0 10px 0 #ff5a36">${p.button || 'Download free'}</div>`;
+    return e;
+  },
+  update(e, t) {
+    const a = spring(t), b = spring(t - .15), c = spring(t - .3), d2 = spring(t - .45);
+    e.querySelector('.lg').style.transform = `scale(${a}) rotate(${lerp(-25, 0, a)}deg)`;
+    e.querySelector('.nm').style.cssText += `;opacity:${clamp(b * 2)};transform:translateY(${lerp(40, 0, b)}px)`;
+    e.querySelector('.sub').style.opacity = clamp(c * 2);
+    e.querySelector('.stars').style.cssText += `;opacity:${clamp(c * 2)};transform:scale(${lerp(.6, 1, c)})`;
+    if (document.body.classList.contains('dark')) { e.querySelector('.btn').style.background = '#c8f53a'; e.querySelector('.btn').style.color = '#16161a'; }
+    e.querySelector('.btn').style.cssText += `;opacity:${clamp(d2 * 2)};transform:scale(${lerp(.6, 1, d2)}) translateY(${Math.sin(t * 4) * 4}px)`;
+  }
+};
+
+// a single habit being added in seconds
+V.add = {
+  build(p) {
+    const e = h('div', 'vis card'); e.style.cssText += ';left:110px;top:660px;width:720px;padding:40px 44px';
+    e.innerHTML = `<div style="display:flex;justify-content:space-between"><div class="mono" style="font-size:24px;color:#8a8780">// new habit</div><div class="mono tmr" style="font-size:24px;color:#ff5a36">0.0s</div></div>
+      <div style="margin-top:22px;border:4px solid #16161a;border-radius:24px;padding:22px 26px;font-weight:600;font-size:52px;letter-spacing:-.02em;min-height:110px"><span class="ty"></span><span class="cur" style="display:inline-block;width:4px;height:56px;background:#ff5a36;vertical-align:-8px;margin-left:4px"></span></div>
+      <div style="display:flex;gap:14px;margin-top:22px">${['Daily', '8:00 AM', '🔔 on'].map(x => `<div class="chip mono" style="font-size:24px;padding:12px 20px;border-radius:30px;background:#f1efea">${x}</div>`).join('')}</div>
+      <div class="sv" style="margin-top:26px;text-align:center;background:#ff5a36;color:#fff;font-weight:700;font-size:40px;padding:22px;border-radius:24px">Add habit</div>`;
+    return e;
+  },
+  update(e, t, d, p) {
+    const s = spring(t); e.style.transform = `translateY(${lerp(140, 0, s)}px) rotate(${lerp(3, 1, s)}deg)`; e.style.opacity = clamp(t * 4);
+    const txt = p.text || 'Read 10 pages', k = prog(t, .3, Math.min(1.4, d * .45));
+    e.querySelector('.ty').textContent = txt.slice(0, Math.round(txt.length * k));
+    e.querySelector('.cur').style.opacity = (Math.floor(t * 3) % 2 || k < 1) ? 1 : 0;
+    const press = prog(t, .3 + Math.min(1.4, d * .45) + .2, .2);
+    const sv = e.querySelector('.sv'); sv.style.transform = `scale(${1 - Math.sin(press * Math.PI) * .07})`;
+    if (press >= 1) { sv.innerHTML = '✓ Added'; sv.style.background = '#16161a'; }
+    e.querySelector('.tmr').textContent = Math.min(t, .3 + Math.min(1.4, d * .45) + .4).toFixed(1) + 's';
+  }
+};
+
+// ---------- avatar ----------
+const SKIN = '#f3c9a8', SKIN_D = '#e2a986', HAIR = '#2a211d', HOOD = '#ff5a36', HOOD_D = '#e04424';
+$('#avatar').innerHTML = `
+<defs>
+  <pattern id="dots" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="4.5" cy="4.5" r="2.2" fill="#000"/></pattern>
+  <clipPath id="faceClip"><ellipse cx="320" cy="360" rx="150" ry="172"/></clipPath>
+  <clipPath id="bodyClip"><path d="M40 820 C 50 660, 150 600, 320 596 C 490 600, 590 660, 600 820 Z"/></clipPath>
+</defs>
+<g id="av-body">
+  <path d="M40 820 C 50 660, 150 600, 320 596 C 490 600, 590 660, 600 820 Z" fill="${HOOD}"/>
+  <g clip-path="url(#bodyClip)"><path d="M40 820 C 50 660, 150 600, 320 596 C 490 600, 590 660, 600 820 Z" fill="url(#dots)" opacity=".13" transform="translate(150 0)"/></g>
+  <path d="M215 620 C 240 690, 400 690, 425 620 C 400 600, 240 600, 215 620 Z" fill="${HOOD_D}"/>
+  <path d="M286 650 L 280 740 M 354 650 L 360 740" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="280" cy="746" r="8" fill="#fff"/><circle cx="360" cy="746" r="8" fill="#fff"/>
+  <rect x="244" y="788" width="152" height="40" rx="14" fill="${HOOD_D}"/>
+</g>
+<g id="av-head">
+  <rect x="282" y="500" width="76" height="120" rx="30" fill="${SKIN_D}"/>
+  <circle cx="172" cy="380" r="30" fill="${SKIN}"/><circle cx="468" cy="380" r="30" fill="${SKIN}"/>
+  <ellipse cx="320" cy="360" rx="150" ry="172" fill="${SKIN}"/>
+  <g clip-path="url(#faceClip)"><ellipse cx="320" cy="360" rx="150" ry="172" fill="url(#dots)" opacity=".1" transform="translate(110 30)"/></g>
+  <circle cx="320" cy="132" r="58" fill="${HAIR}"/>
+  <path d="M160 380 C 140 190, 250 160, 320 162 C 420 164, 500 200, 482 380 C 470 300, 440 262, 400 244 C 330 280, 230 262, 200 244 C 176 280, 166 330, 160 380 Z" fill="${HAIR}"/>
+  <g id="av-brows" fill="none" stroke="${HAIR}" stroke-width="12" stroke-linecap="round">
+    <path id="brL" d="M222 300 Q 256 284 290 296"/><path id="brR" d="M350 296 Q 384 284 418 300"/>
+  </g>
+  <g id="av-eyes" fill="#1b1b1f"><ellipse id="eyL" cx="258" cy="358" rx="12" ry="14"/><ellipse id="eyR" cx="382" cy="358" rx="12" ry="14"/></g>
+  <g fill="rgba(255,255,255,.18)" stroke="#1b1b1f" stroke-width="8"><circle cx="258" cy="356" r="50"/><circle cx="382" cy="356" r="50"/></g>
+  <path d="M308 354 Q 320 344 332 354" stroke="#1b1b1f" stroke-width="8" fill="none"/>
+  <path d="M318 382 Q 306 414 322 420" stroke="${SKIN_D}" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <circle cx="226" cy="430" r="26" fill="#ff7d7d" opacity=".28"/><circle cx="414" cy="430" r="26" fill="#ff7d7d" opacity=".28"/>
+  <g id="av-mouth" transform="translate(320 458)">
+    <path id="mOpen" fill="#5a1d22"/>
+    <path id="mTongue" fill="#ff8a8a"/>
+    <path id="mTeeth" fill="#fff"/>
+    <path id="mClosed" fill="none" stroke="#5a1d22" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <path id="sweat" d="M470 250 C 462 270, 458 280, 470 290 C 482 280, 478 270, 470 250 Z" fill="#7cc4ff" opacity="0"/>
+</g>`;
+
+const MOODS = {
+  neutral: { brow: 0, smile: .35, lift: 0 },
+  happy: { brow: -4, smile: 1, lift: -4 },
+  excited: { brow: -10, smile: 1.2, lift: -8 },
+  worried: { brow: 10, smile: -.6, lift: 0, sweat: 1 },
+  smug: { brow: -2, smile: .7, lift: 0, tilt: -4 },
+  serious: { brow: 6, smile: 0, lift: 0 },
+};
+function avatar(t, open, mood, prevMood, mt) {
+  const a = MOODS[prevMood] || MOODS.neutral, b = MOODS[mood] || MOODS.neutral, k = easeOut(clamp(mt / .3));
+  const m = {}; for (const key of ['brow', 'smile', 'lift', 'tilt', 'sweat']) m[key] = lerp(a[key] || 0, b[key] || 0, k);
+  const bob = Math.sin(t * 2.1) * 6 + open * 6, sway = Math.sin(t * 1.3) * 1.8 + (m.tilt || 0);
+  $('#av-head').setAttribute('transform', `translate(0 ${bob + m.lift}) rotate(${sway} 320 560)`);
+  $('#av-body').setAttribute('transform', `translate(0 ${bob * .35})`);
+  const br = m.brow;
+  $('#brL').setAttribute('d', `M222 ${300 + br} Q 256 ${284 + br * .3} 290 ${296 - br * .6}`);
+  $('#brR').setAttribute('d', `M350 ${296 - br * .6} Q 384 ${284 + br * .3} 418 ${300 + br}`);
+  // blink every ~3.1s
+  const bp = (t + .7) % 3.1, blink = bp < .14 ? Math.sin(bp / .14 * Math.PI) : 0;
+  for (const id of ['#eyL', '#eyR']) $(id).setAttribute('ry', 14 * (1 - blink * .9));
+  const sm = m.smile, w = 44 - open * 10, hgt = open * 46;
+  if (open > .06) {
+    const top = -4 - sm * 4, bot = top + hgt + 6 + sm * 6;
+    $('#mOpen').setAttribute('d', `M${-w} ${top} Q 0 ${top - 6 + sm * 2} ${w} ${top} Q ${w * .9} ${bot} 0 ${bot} Q ${-w * .9} ${bot} ${-w} ${top} Z`);
+    $('#mTeeth').setAttribute('d', `M${-w * .8} ${top + 1} Q 0 ${top - 3} ${w * .8} ${top + 1} L ${w * .7} ${top + 10} Q 0 ${top + 7} ${-w * .7} ${top + 10} Z`);
+    $('#mTongue').setAttribute('d', `M${-w * .5} ${bot - 3} Q 0 ${bot - hgt * .5} ${w * .5} ${bot - 3} Q 0 ${bot + 2} ${-w * .5} ${bot - 3} Z`);
+    $('#mClosed').setAttribute('d', '');
+  } else {
+    for (const id of ['#mOpen', '#mTeeth', '#mTongue']) $(id).setAttribute('d', '');
+    $('#mClosed').setAttribute('d', `M-38 ${-sm * 6} Q 0 ${sm * 22} 38 ${-sm * 6}`);
+  }
+  const sw = $('#sweat'); sw.setAttribute('opacity', (m.sweat || 0) * .95); sw.setAttribute('transform', `translate(0 ${(t * 30) % 40 * (m.sweat || 0)})`);
+}
+
+// ---------- timeline driver ----------
+const TL = window.TIMELINE;
+const headline = $('#headline'), visRoot = $('#visuals');
+let curScene = -1, wordEls = [];
+const visEls = TL.visuals.map(v => null);
+
+function markup(words) {
+  headline.innerHTML = '';
+  wordEls = words.map(w => {
+    const e = h('span', 'w' + (w.cls ? ' ' + w.cls : ''));
+    e.textContent = w.text;
+    headline.append(e, document.createTextNode(' '));
+    return e;
+  });
+}
+
+window.renderAt = function (t) {
+  const si = Math.max(0, TL.scenes.findIndex(s => t >= s.start && t < s.end) === -1 ? TL.scenes.length - 1 : TL.scenes.findIndex(s => t >= s.start && t < s.end));
+  const sc = TL.scenes[si], lt = t - sc.start;
+  if (si !== curScene) { markup(sc.words); curScene = si; $('#label').textContent = sc.label || ''; }
+
+  const dark = sc.theme === 'dark';
+  document.body.classList.toggle('dark', dark);
+  const prevDark = si > 0 && TL.scenes[si - 1].theme === 'dark';
+  const th = prevDark === dark ? 1 : easeOut(clamp(lt / .35));
+  $('#bgDark').style.opacity = dark ? th : 1 - th;
+
+  // headline: whole sentence fades in faint, each spoken word snaps to full ink
+  const enter = easeOut(clamp(lt / .25));
+  wordEls.forEach((e, i) => {
+    const wt = sc.words[i].t - sc.start, k = easeOut(clamp((lt - wt + .06) / .14));
+    e.style.opacity = (.16 + .84 * k) * enter;
+    e.style.transform = `translateY(${(1 - enter) * 40 + (1 - k) * 6}px)`;
+  });
+  if (sc.counter) {
+    const c = sc.counter, k = easeInOut(clamp(lt / Math.max(.3, (sc.end - sc.start) * .8)));
+    const v = typeof c.from === 'number' ? Math.round(lerp(c.from, c.to, k)) : c.to;
+    $('#counter').innerHTML = `${c.name} <b>${c.prefix || ''}${typeof v === 'number' ? v.toLocaleString('en-US') : v}${c.suffix || ''}</b>`;
+  } else $('#counter').innerHTML = '';
+
+  // visuals (may span multiple scenes)
+  TL.visuals.forEach((v, i) => {
+    const on = t >= v.start && t < v.end + .3;
+    if (on && !visEls[i]) { visEls[i] = V[v.type].build(v); visRoot.append(visEls[i]); }
+    if (!on && visEls[i]) { visEls[i].remove(); visEls[i] = null; }
+    if (on) {
+      const e = visEls[i];
+      V[v.type].update(e, t - v.start, v.end - v.start, v);
+      const out = clamp((t - v.end) / .3);
+      if (out > 0) { e.style.opacity = 1 - out; e.style.transform += ` translateY(${-out * 60}px) scale(${1 - out * .08})`; }
+    }
+  });
+
+  // presenter
+  const fi = Math.min(TL.mouth.length - 1, Math.round(t * TL.fps));
+  const prev = TL.scenes[Math.max(0, si - 1)].mood || 'neutral';
+  avatar(t, TL.mouth[fi] || 0, sc.mood || 'neutral', si === 0 ? (sc.mood || 'neutral') : prev, lt);
+  $('#glow').style.opacity = sc.mood === 'worried' ? .9 : 0;
+  const pop = TL.avatarIntro ? spring(t * 1.2) : 1;
+  $('#avatar').style.transform = `translateY(${(1 - pop) * 500}px)`;
+};
+</script>
+</body>
+</html>

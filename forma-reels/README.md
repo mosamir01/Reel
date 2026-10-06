@@ -1,5 +1,8 @@
 # Forma talking-head ad reels
 
+> For the animated presenter style (like the reference reel), see [`motion/`](motion/README.md).
+> This folder is the version for filming yourself on camera.
+
 Five UGC-style scripts. Each is one person talking straight to camera about Forma, with
 a hook banner up top, bold captions and a Forma end card. Each one runs about 25–30 seconds.
 
