@@ -114,25 +114,28 @@ V.apps = {
   }
 };
 
-// the Forma app itself: today list with habits getting checked off
+// the Forma app itself: Today, habits grouped by time of day, checked off one by one
+const PHONE_FRAME = 'width:470px;height:900px;border-radius:70px;background:#111;padding:16px;box-shadow:0 50px 90px -30px rgba(0,0,0,.45)';
 V.phone = {
   build(p) {
     const e = h('div', 'vis');
-    e.style.cssText = 'left:120px;top:620px;width:470px;height:900px;border-radius:70px;background:#111;padding:16px;box-shadow:0 50px 90px -30px rgba(0,0,0,.45)';
-    const habits = p.habits || ['Drink water', 'Read 10 pages', 'Walk 20 min', 'No phone in bed'];
-    e.innerHTML = `<div style="position:relative;width:100%;height:100%;border-radius:56px;background:#fbfaf7;color:#16161a;overflow:hidden;padding:70px 34px 0">
+    e.style.cssText = 'left:120px;top:620px;' + PHONE_FRAME;
+    const habits = p.habits || [['💧', 'Drink water', 'Morning'], ['🧘', 'Stretch 5 min', 'Morning'], ['🚶', 'Walk 20 min', 'Afternoon'], ['📖', 'Read 10 pages', 'Evening']];
+    let html = '', grp = null;
+    habits.forEach(([em, name, g], i) => {
+      if (g !== grp) { grp = g; html += `<div class="mono" style="font-size:17px;letter-spacing:.08em;color:#a09d95;margin:${i ? 18 : 4}px 4px 10px;text-transform:uppercase">${g}</div>`; }
+      html += `<div class="hb" style="display:flex;align-items:center;gap:16px;background:#fff;border-radius:24px;padding:16px 18px;margin-bottom:10px;box-shadow:0 0 0 2px #eeebe4">
+        <div style="flex:none;width:52px;height:52px;border-radius:16px;background:#f4f2ed;display:grid;place-items:center;font-size:30px">${em}</div>
+        <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:25px;white-space:nowrap">${name}</div><div class="mono" style="font-size:16px;color:#a09d95;margin-top:2px">🔥 ${[12, 43, 8, 21, 5, 30][i % 6]} days</div></div>
+        <div class="ck" style="flex:none;width:46px;height:46px;border-radius:50%;border:4px solid #dcd8cf;color:#fff;padding:6px"></div></div>`;
+    });
+    e.innerHTML = `<div style="position:relative;width:100%;height:100%;border-radius:56px;background:#fbfaf7;color:#16161a;overflow:hidden;padding:72px 28px 0">
       <div style="position:absolute;top:22px;left:50%;transform:translateX(-50%);width:130px;height:36px;border-radius:20px;background:#111"></div>
-      <div class="mono" style="font-size:20px;color:#8a8780">${p.date || 'TUESDAY · OCT 6'}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 26px">
-        <div style="font-weight:700;font-size:50px;letter-spacing:-.03em">Today</div>
-        <div style="display:flex;align-items:center;gap:6px;background:#fff1ec;color:#ff5a36;border-radius:30px;padding:8px 16px;font-weight:700;font-size:26px"><span style="width:26px;height:26px">${ICONS.flame}</span><span class="streak">${p.streak || 43}</span></div>
-      </div>
-      ${habits.map((x, i) => `<div class="hb" style="display:flex;align-items:center;gap:20px;background:#fff;border-radius:26px;padding:24px 22px;margin-bottom:16px;box-shadow:0 2px 0 rgba(0,0,0,.04),0 0 0 2px #eeebe4">
-        <div class="ck" style="flex:none;width:52px;height:52px;border-radius:50%;border:4px solid #dcd8cf;color:#fff;padding:7px"></div>
-        <div style="flex:1"><div style="font-weight:600;font-size:28px">${x}</div><div class="mono" style="font-size:18px;color:#a09d95;margin-top:4px">${[12, 43, 8, 21, 5, 30][i % 6]} day streak</div></div></div>`).join('')}
-      <div style="position:absolute;bottom:34px;left:34px;right:34px;height:16px;border-radius:8px;background:#eeebe4"><div class="bar" style="height:100%;border-radius:8px;background:#ff5a36;width:0"></div></div>
-    </div>
-    <div class="finger" style="position:absolute;width:90px;height:90px;border-radius:50%;background:rgba(255,90,54,.25);border:4px solid rgba(255,90,54,.7);opacity:0"></div>`;
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:0 4px 18px">
+        <div><div class="mono" style="font-size:18px;color:#8a8780">${p.date || 'TUE, OCT 6'}</div><div style="font-weight:700;font-size:48px;letter-spacing:-.03em">Today</div></div>
+        <svg viewBox="0 0 100 100" width="96" height="96"><circle cx="50" cy="50" r="40" fill="none" stroke="#eeebe4" stroke-width="11"/><circle class="ring" cx="50" cy="50" r="40" fill="none" stroke="#ff5a36" stroke-width="11" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3" transform="rotate(-90 50 50)"/><text class="rt" x="50" y="58" text-anchor="middle" font-family="Grotesk" font-weight="700" font-size="24" fill="#16161a">0/4</text></svg>
+      </div>${html}</div>
+    <div class="finger" style="position:absolute;width:80px;height:80px;border-radius:50%;background:rgba(255,90,54,.25);border:4px solid rgba(255,90,54,.7);opacity:0"></div>`;
     return e;
   },
   update(e, t, d, p) {
@@ -152,14 +155,76 @@ V.phone = {
       ck.style.background = k > 0 ? '#ff5a36' : 'transparent';
       ck.style.borderColor = k > 0 ? '#ff5a36' : '#dcd8cf';
       ck.style.transform = `scale(${k > 0 ? lerp(1.35, 1, easeOut(k)) : 1})`;
-      hb.style.opacity = k > 0 ? .6 + (1 - k) * .4 : 1;
+      hb.style.opacity = k > 0 ? .62 + (1 - k) * .38 : 1;
       if (i < checks && t > at - .3 && t < at + .35) {
-        const r = hb.offsetTop + hb.offsetHeight / 2 + 16 - 45, near = 1 - Math.abs(t - at) / .35;
-        f.style.opacity = clamp(near * 1.5); f.style.left = (16 + 34 + 26 - 19) + 'px'; f.style.top = r + 'px';
+        const near = 1 - Math.abs(t - at) / .35;
+        f.style.opacity = clamp(near * 1.5);
+        f.style.left = (16 + 28 + hb.offsetLeft + hb.offsetWidth - 18 - 23 - 40) + 'px';
+        f.style.top = (16 + hb.offsetTop + hb.offsetHeight / 2 - 40) + 'px';
         f.style.transform = `scale(${lerp(1.3, .85, clamp(near))})`;
       }
     });
-    e.querySelector('.bar').style.width = (done / n * 100) + '%';
+    e.querySelector('.ring').setAttribute('stroke-dashoffset', 251.3 * (1 - done / n));
+    e.querySelector('.rt').textContent = `${done}/${n}`;
+  }
+};
+
+// a real app screenshot (put PNGs in assets/screens/) in a phone frame with a slow push-in
+V.shot = {
+  build(p) {
+    const e = h('div', 'vis');
+    e.style.cssText = `left:${p.left || 120}px;top:${p.top || 600}px;` + PHONE_FRAME;
+    e.innerHTML = `<div style="width:100%;height:100%;border-radius:56px;overflow:hidden;background:#fff"><img src="assets/screens/${p.src}" style="width:100%;height:100%;object-fit:cover;object-position:top;transform-origin:${p.focus || '50% 30%'}"></div>`;
+    return e;
+  },
+  update(e, t, d, p) {
+    const s = spring(t);
+    e.style.transform = `translateY(${lerp(500, 0, s)}px) rotate(${lerp(8, p.tilt == null ? -3 : p.tilt, s)}deg)`;
+    e.querySelector('img').style.transform = `scale(${lerp(1, p.zoom || 1.06, easeInOut(prog(t, .4, d)))})`;
+  }
+};
+
+// "no account, works offline" privacy card
+V.privacy = {
+  build(p) {
+    const e = h('div', 'vis card'); e.style.cssText += ';left:110px;top:640px;width:700px;padding:40px 44px';
+    const rows = p.rows || [['✈️', 'Airplane mode', 'still works'], ['👤', 'Account', 'not needed'], ['🔒', 'Your data', 'stays on your phone']];
+    e.innerHTML = `<div class="mono" style="font-size:24px;color:#8a8780">// ${p.title || 'privacy'}</div>` + rows.map(([ic, a, b]) => `<div class="rw" style="display:flex;align-items:center;gap:22px;margin-top:26px">
+      <div style="width:72px;height:72px;border-radius:20px;background:#f4f2ed;display:grid;place-items:center;font-size:38px">${ic}</div>
+      <div style="flex:1"><div style="font-weight:600;font-size:38px;letter-spacing:-.02em">${a}</div><div class="mono" style="font-size:22px;color:#8a8780">${b}</div></div>
+      <div class="tg" style="width:96px;height:56px;border-radius:30px;background:#dcd8cf;position:relative"><div class="kn" style="position:absolute;top:6px;left:6px;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.2)"></div></div></div>`).join('');
+    return e;
+  },
+  update(e, t, d) {
+    const s = spring(t); e.style.transform = `translateY(${lerp(140, 0, s)}px) rotate(${lerp(-4, -1.5, s)}deg)`; e.style.opacity = clamp(t * 4);
+    e.querySelectorAll('.rw').forEach((r, i) => {
+      const a = spring(t - .1 - i * .1); r.style.opacity = clamp(a * 2); r.style.transform = `translateX(${lerp(-40, 0, a)}px)`;
+      const k = easeOut(prog(t, .5 + i * (d - 1) / 3, .2));
+      r.querySelector('.kn').style.left = lerp(6, 46, k) + 'px';
+      r.querySelector('.tg').style.background = k > .5 ? '#34c759' : '#dcd8cf';
+    });
+  }
+};
+
+// subscription vs one-time price comparison
+V.compare = {
+  build(p) {
+    const e = h('div', 'vis'); e.style.cssText = 'left:110px;top:650px;width:860px;display:flex;gap:30px;color:#16161a';
+    const col = (title, price, per, rows, good) => `<div class="cl card" style="flex:1;padding:34px 32px;${good ? 'box-shadow:0 0 0 5px #ff5a36,0 30px 60px -20px rgba(255,90,54,.4)' : ''}">
+      <div class="mono" style="font-size:22px;color:#8a8780">${title}</div>
+      <div style="font-weight:700;font-size:84px;letter-spacing:-.04em;margin-top:6px">${price}</div><div class="mono" style="font-size:22px;color:#8a8780">${per}</div>
+      ${rows.map(r => `<div style="display:flex;gap:12px;align-items:center;margin-top:18px;font-weight:600;font-size:26px"><span style="width:30px;height:30px;color:${good ? '#ff5a36' : '#c7c3ba'}">${good ? ICONS.check : ICONS.x}</span>${r}</div>`).join('')}
+      ${good ? '' : '<div class="slash" style="position:absolute;left:20px;right:20px;top:120px;height:12px;border-radius:6px;background:#ff3b30;transform:rotate(-14deg) scaleX(0);transform-origin:left"></div>'}</div>`;
+    e.innerHTML = col(p.leftTitle || 'other apps', p.leftPrice || '$59', p.leftPer || 'every year', p.leftRows || ['account wall', 'upsells', 'forever bill'], false)
+      + col(p.rightTitle || 'forma pro', p.rightPrice || 'Once', p.rightPer || 'pay once, keep it', p.rightRows || ['no account', 'works offline', 'no subscription'], true);
+    e.querySelectorAll('.cl').forEach(c => c.style.position = 'relative');
+    return e;
+  },
+  update(e, t) {
+    const [a, b] = e.querySelectorAll('.cl'), sa = spring(t), sb = spring(t - .35);
+    a.style.transform = `translateY(${lerp(140, 0, sa)}px) rotate(${lerp(-6, -2, sa)}deg)`; a.style.opacity = clamp(t * 4);
+    b.style.transform = `translateY(${lerp(140, 0, sb)}px) rotate(${lerp(6, 2, sb)}deg) scale(${lerp(.9, 1.03, sb)})`; b.style.opacity = clamp((t - .35) * 4);
+    const sl = e.querySelector('.slash'); if (sl) sl.style.transform = `rotate(-14deg) scaleX(${easeOut(prog(t, .9, .25))})`;
   }
 };
 
@@ -223,7 +288,7 @@ V.widget = {
       <div class="wg" style="background:rgba(255,255,255,.93);border-radius:40px;padding:28px;display:flex;gap:24px;align-items:center">
         <svg viewBox="0 0 100 100" width="160" height="160"><circle cx="50" cy="50" r="40" fill="none" stroke="#eeebe4" stroke-width="13"/><circle class="ring" cx="50" cy="50" r="40" fill="none" stroke="#ff5a36" stroke-width="13" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3" transform="rotate(-90 50 50)"/><text class="rt" x="50" y="58" text-anchor="middle" font-family="Grotesk" font-weight="700" font-size="24" fill="#16161a">0/4</text></svg>
         <div style="flex:1"><div style="display:flex;align-items:center;gap:8px">${LOGO(34)}<b style="font-size:24px">Forma</b></div>
-        ${['Water', 'Read', 'Walk', 'Stretch'].map(x => `<div class="wi" style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:600;font-size:22px"><span class="wd" style="width:22px;height:22px;border-radius:50%;border:3px solid #dcd8cf"></span>${x}</div>`).join('')}</div></div>
+        ${['💧 Water', '🧘 Stretch', '🚶 Walk', '📖 Read'].map(x => `<div class="wi" style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:600;font-size:22px"><span class="wd" style="width:22px;height:22px;border-radius:50%;border:3px solid #dcd8cf"></span>${x}</div>`).join('')}</div></div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:26px 22px;margin-top:40px">${ic.map(c => `<div style="aspect-ratio:1;border-radius:22px;background:${c};opacity:.9"></div>`).join('')}</div>
     </div>`;
     return e;
@@ -418,66 +483,85 @@ V.add = {
   }
 };
 
-// ---------- avatar ----------
-const SKIN = '#f3c9a8', SKIN_D = '#e2a986', HAIR = '#2a211d', HOOD = '#ff5a36', HOOD_D = '#e04424';
+// ---------- avatar: curly-haired presenter, green sweater ----------
+const SKIN = '#9a6544', SKIN_D = '#7f5034', SKIN_L = '#ad7552', HAIR = '#1d1513', HAIR_L = '#33261f', TOP = '#2f6f5e', TOP_D = '#245a4c';
+const curls = [];
+// a cloud of curls framing the head
+for (const [cx, cy, r] of [[190, 250, 62], [235, 185, 66], [300, 150, 70], [372, 156, 68], [438, 200, 64], [470, 268, 56], [168, 318, 50], [480, 336, 46],
+  [260, 128, 48], [340, 112, 50], [410, 130, 46], [200, 200, 44], [160, 380, 34], [488, 400, 32]]) curls.push(`<circle cx="${cx}" cy="${cy}" r="${r}"/>`);
+const curlHi = [[230, 170, 16], [300, 130, 18], [380, 140, 15], [440, 190, 14], [190, 240, 15], [340, 100, 12], [260, 115, 11]]
+  .map(([x, y, r]) => `<path d="M${x - r} ${y} a${r} ${r} 0 0 1 ${r * 2} 0" fill="none" stroke="${HAIR_L}" stroke-width="7" stroke-linecap="round"/>`).join('');
 $('#avatar').innerHTML = `
-<defs>
-  <pattern id="dots" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="4.5" cy="4.5" r="2.2" fill="#000"/></pattern>
-  <clipPath id="faceClip"><ellipse cx="320" cy="360" rx="150" ry="172"/></clipPath>
-  <clipPath id="bodyClip"><path d="M40 820 C 50 660, 150 600, 320 596 C 490 600, 590 660, 600 820 Z"/></clipPath>
-</defs>
 <g id="av-body">
-  <path d="M40 820 C 50 660, 150 600, 320 596 C 490 600, 590 660, 600 820 Z" fill="${HOOD}"/>
-  <g clip-path="url(#bodyClip)"><path d="M40 820 C 50 660, 150 600, 320 596 C 490 600, 590 660, 600 820 Z" fill="url(#dots)" opacity=".13" transform="translate(150 0)"/></g>
-  <path d="M215 620 C 240 690, 400 690, 425 620 C 400 600, 240 600, 215 620 Z" fill="${HOOD_D}"/>
-  <path d="M286 650 L 280 740 M 354 650 L 360 740" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="280" cy="746" r="8" fill="#fff"/><circle cx="360" cy="746" r="8" fill="#fff"/>
-  <rect x="244" y="788" width="152" height="40" rx="14" fill="${HOOD_D}"/>
+  <path d="M30 820 C 40 668, 150 612, 320 606 C 490 612, 600 668, 610 820 Z" fill="${TOP}"/>
+  <path d="M420 640 C 520 660, 600 720, 610 820 L 470 820 C 470 740, 450 680, 420 640 Z" fill="${TOP_D}" opacity=".7"/>
+  <path d="M236 618 C 260 676, 380 676, 404 618 C 380 606, 260 606, 236 618 Z" fill="#f4f1ea"/>
+  <path d="M226 616 C 254 690, 386 690, 414 616" fill="none" stroke="${TOP_D}" stroke-width="16" stroke-linecap="round"/>
+  <path d="M70 820 C 76 760, 90 720, 110 700 M570 820 C 564 760, 550 720, 530 700" stroke="${TOP_D}" stroke-width="6" fill="none" opacity=".6"/>
+</g>
+<g id="av-hand" opacity="0">
+  <path d="M60 820 C 70 720, 92 640, 118 600 L 178 616 C 160 670, 150 740, 150 820 Z" fill="${TOP}"/>
+  <path d="M118 600 L 178 616" stroke="${TOP_D}" stroke-width="14" stroke-linecap="round"/>
+  <g fill="${SKIN}" stroke="${SKIN_D}" stroke-width="4">
+    <rect x="104" y="500" width="84" height="104" rx="36"/>
+    <rect x="104" y="436" width="22" height="90" rx="11"/><rect x="128" y="424" width="22" height="100" rx="11"/>
+    <rect x="152" y="430" width="22" height="94" rx="11"/><rect x="174" y="446" width="20" height="80" rx="10"/>
+    <rect x="72" y="520" width="58" height="24" rx="12" transform="rotate(-35 100 532)"/>
+  </g>
 </g>
 <g id="av-head">
-  <rect x="282" y="500" width="76" height="120" rx="30" fill="${SKIN_D}"/>
-  <circle cx="172" cy="380" r="30" fill="${SKIN}"/><circle cx="468" cy="380" r="30" fill="${SKIN}"/>
-  <ellipse cx="320" cy="360" rx="150" ry="172" fill="${SKIN}"/>
-  <g clip-path="url(#faceClip)"><ellipse cx="320" cy="360" rx="150" ry="172" fill="url(#dots)" opacity=".1" transform="translate(110 30)"/></g>
-  <circle cx="320" cy="132" r="58" fill="${HAIR}"/>
-  <path d="M160 380 C 140 190, 250 160, 320 162 C 420 164, 500 200, 482 380 C 470 300, 440 262, 400 244 C 330 280, 230 262, 200 244 C 176 280, 166 330, 160 380 Z" fill="${HAIR}"/>
-  <g id="av-brows" fill="none" stroke="${HAIR}" stroke-width="12" stroke-linecap="round">
+  <path d="M286 500 L 286 612 Q 320 636 354 612 L 354 500 Z" fill="${SKIN_D}"/>
+  <g fill="${HAIR}">${curls.join('')}</g>
+  <ellipse cx="176" cy="380" rx="26" ry="34" fill="${SKIN}"/><ellipse cx="464" cy="380" rx="26" ry="34" fill="${SKIN}"/>
+  <path d="M170 360 Q 160 380 172 398" stroke="${SKIN_D}" stroke-width="5" fill="none"/>
+  <circle cx="172" cy="418" r="14" fill="none" stroke="#e9b949" stroke-width="5"/><circle cx="468" cy="418" r="14" fill="none" stroke="#e9b949" stroke-width="5"/>
+  <path d="M320 186 C 420 186, 466 260, 466 360 C 466 470, 400 530, 320 530 C 240 530, 174 470, 174 360 C 174 260, 220 186, 320 186 Z" fill="${SKIN}"/>
+  <path d="M410 220 C 450 260, 466 320, 462 380 C 456 460, 410 512, 350 526 C 420 490, 448 420, 440 340 C 436 290, 426 250, 410 220 Z" fill="${SKIN_D}" opacity=".35"/>
+  <g fill="${HAIR}">
+    <circle cx="232" cy="222" r="40"/><circle cx="282" cy="200" r="42"/><circle cx="340" cy="196" r="42"/><circle cx="398" cy="214" r="40"/><circle cx="436" cy="250" r="30"/><circle cx="200" cy="262" r="28"/>
+  </g>
+  ${curlHi}
+  <g id="av-brows" fill="none" stroke="${HAIR}" stroke-width="15" stroke-linecap="round">
     <path id="brL" d="M222 300 Q 256 284 290 296"/><path id="brR" d="M350 296 Q 384 284 418 300"/>
   </g>
-  <g id="av-eyes" fill="#1b1b1f"><ellipse id="eyL" cx="258" cy="358" rx="12" ry="14"/><ellipse id="eyR" cx="382" cy="358" rx="12" ry="14"/></g>
-  <g fill="rgba(255,255,255,.18)" stroke="#1b1b1f" stroke-width="8"><circle cx="258" cy="356" r="50"/><circle cx="382" cy="356" r="50"/></g>
-  <path d="M308 354 Q 320 344 332 354" stroke="#1b1b1f" stroke-width="8" fill="none"/>
-  <path d="M318 382 Q 306 414 322 420" stroke="${SKIN_D}" stroke-width="7" fill="none" stroke-linecap="round"/>
-  <circle cx="226" cy="430" r="26" fill="#ff7d7d" opacity=".28"/><circle cx="414" cy="430" r="26" fill="#ff7d7d" opacity=".28"/>
-  <g id="av-mouth" transform="translate(320 458)">
-    <path id="mOpen" fill="#5a1d22"/>
-    <path id="mTongue" fill="#ff8a8a"/>
+  <g id="eyeL"><ellipse cx="258" cy="352" rx="26" ry="28" fill="#fff"/><circle class="pp" cx="260" cy="354" r="15" fill="#2a1a12"/><circle class="pp" cx="266" cy="347" r="5" fill="#fff"/></g>
+  <g id="eyeR"><ellipse cx="382" cy="352" rx="26" ry="28" fill="#fff"/><circle class="pp" cx="384" cy="354" r="15" fill="#2a1a12"/><circle class="pp" cx="390" cy="347" r="5" fill="#fff"/></g>
+  <path d="M320 370 Q 306 412 322 420 Q 334 422 338 414" stroke="${SKIN_D}" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <ellipse cx="226" cy="430" rx="26" ry="16" fill="#e0705a" opacity=".3"/><ellipse cx="414" cy="430" rx="26" ry="16" fill="#e0705a" opacity=".3"/>
+  <g id="av-mouth" transform="translate(320 462)">
+    <path id="mOpen" fill="#3b1416"/>
+    <path id="mTongue" fill="#e56d6d"/>
     <path id="mTeeth" fill="#fff"/>
-    <path id="mClosed" fill="none" stroke="#5a1d22" stroke-width="9" stroke-linecap="round"/>
+    <path id="mClosed" fill="none" stroke="#3b1416" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <path id="sweat" d="M470 250 C 462 270, 458 280, 470 290 C 482 280, 478 270, 470 250 Z" fill="#7cc4ff" opacity="0"/>
+  <path id="sweat" d="M476 250 C 468 270, 464 280, 476 290 C 488 280, 484 270, 476 250 Z" fill="#7cc4ff" opacity="0"/>
 </g>`;
 
 const MOODS = {
   neutral: { brow: 0, smile: .35, lift: 0 },
   happy: { brow: -4, smile: 1, lift: -4 },
-  excited: { brow: -10, smile: 1.2, lift: -8 },
-  worried: { brow: 10, smile: -.6, lift: 0, sweat: 1 },
-  smug: { brow: -2, smile: .7, lift: 0, tilt: -4 },
+  excited: { brow: -10, smile: 1.2, lift: -8, hand: 1 },
+  worried: { brow: 10, smile: -.6, lift: 0, sweat: 1, look: -1 },
+  smug: { brow: -2, smile: .7, lift: 0, tilt: -4, look: 1 },
   serious: { brow: 6, smile: 0, lift: 0 },
 };
 function avatar(t, open, mood, prevMood, mt) {
   const a = MOODS[prevMood] || MOODS.neutral, b = MOODS[mood] || MOODS.neutral, k = easeOut(clamp(mt / .3));
-  const m = {}; for (const key of ['brow', 'smile', 'lift', 'tilt', 'sweat']) m[key] = lerp(a[key] || 0, b[key] || 0, k);
+  const m = {}; for (const key of ['brow', 'smile', 'lift', 'tilt', 'sweat', 'hand', 'look']) m[key] = lerp(a[key] || 0, b[key] || 0, k);
   const bob = Math.sin(t * 2.1) * 6 + open * 6, sway = Math.sin(t * 1.3) * 1.8 + (m.tilt || 0);
   $('#av-head').setAttribute('transform', `translate(0 ${bob + m.lift}) rotate(${sway} 320 560)`);
   $('#av-body').setAttribute('transform', `translate(0 ${bob * .35})`);
+  const hk = spring(m.hand * 1.2) * m.hand, hand = $('#av-hand');
+  hand.setAttribute('opacity', clamp(hk * 3));
+  hand.setAttribute('transform', `translate(0 ${(1 - hk) * 360 + bob * .35}) rotate(${Math.sin(t * 9) * 8 * hk} 140 600)`);
   const br = m.brow;
   $('#brL').setAttribute('d', `M222 ${300 + br} Q 256 ${284 + br * .3} 290 ${296 - br * .6}`);
   $('#brR').setAttribute('d', `M350 ${296 - br * .6} Q 384 ${284 + br * .3} 418 ${300 + br}`);
-  // blink every ~3.1s
-  const bp = (t + .7) % 3.1, blink = bp < .14 ? Math.sin(bp / .14 * Math.PI) : 0;
-  for (const id of ['#eyL', '#eyR']) $(id).setAttribute('ry', 14 * (1 - blink * .9));
+  const bp = (t + .7) % 3.1, blink = bp < .14 ? Math.sin(bp / .14 * Math.PI) : 0, sy = 1 - blink * .92;
+  const lx = (m.look || 0) * 7 + Math.sin(t * .7) * 2;
+  $('#eyeL').setAttribute('transform', `translate(0 352) scale(1 ${sy}) translate(0 -352)`);
+  $('#eyeR').setAttribute('transform', `translate(0 352) scale(1 ${sy}) translate(0 -352)`);
+  document.querySelectorAll('#avatar .pp').forEach(p => p.setAttribute('transform', `translate(${lx} 0)`));
   const sm = m.smile, w = 44 - open * 10, hgt = open * 46;
   if (open > .06) {
     const top = -4 - sm * 4, bot = top + hgt + 6 + sm * 6;

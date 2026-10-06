@@ -21,7 +21,7 @@ Each scene in `scripts/*.json` is one spoken line:
 | `show` | optional on-screen version if it differs (e.g. `day 43` vs spoken `day forty-three`) |
 | `label` | top-left section tag, e.g. `// 02 — the problem` |
 | `counter` | top-right stat: `{"name": "streak", "from": 0, "to": 43}` or a fixed `"to": "2s"` |
-| `visual` | `apps`, `phone`, `streak`, `heatmap`, `widget`, `stats`, `calendar`, `clock`, `checklist`, `sticker`, `notify`, `chain`, `add`, `cta`, or `"same"` to keep the previous one |
+| `visual` | `apps`, `phone`, `streak`, `heatmap`, `widget`, `stats`, `calendar`, `clock`, `checklist`, `sticker`, `notify`, `chain`, `add`, `privacy`, `compare`, `shot`, `cta`, or `"same"` to keep the previous one |
 | `mood` | presenter face: `neutral`, `happy`, `excited`, `smug`, `serious`, `worried` |
 | `theme` | `"dark"` for the neon outro section |
 
@@ -31,3 +31,8 @@ scene, 24 kHz mono).
 
 Brand bits to swap in `page.html`: `LOGO` (the app icon), `--accent` colour, and the presenter
 colours (`SKIN`, `HAIR`, `HOOD`).
+
+## Using real app screenshots
+Drop PNGs into `assets/screens/` and use the `shot` visual in place of the drawn `phone`:
+`"visual": {"type": "shot", "src": "today.png", "zoom": 1.08, "focus": "50% 30%"}`.
+It shows the screenshot in a phone frame, sliding in with a slow push-in toward `focus`.

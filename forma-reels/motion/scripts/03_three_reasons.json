@@ -3,14 +3,113 @@
   "voice": "af_heart",
   "speed": 1.08,
   "scenes": [
-    {"label": "// 00 — hook", "say": "Three reasons I *finally* stuck with a habit app.", "show": "3 reasons I *finally* stuck with a habit app.", "visual": {"type": "sticker", "text": "3 REASONS", "size": 140}, "mood": "smug"},
-    {"label": "// 01 — simple", "say": "One. It's *stupidly* simple.", "visual": {"type": "add", "text": "Read 10 pages"}, "counter": {"name": "reason", "to": "1/3"}, "mood": "happy"},
-    {"label": "// 01 — simple", "say": "New habit in under *five seconds.*", "visual": "same", "counter": {"name": "setup", "to": "4.2s"}, "mood": "smug"},
-    {"label": "// 02 — the widget", "say": "Two. The *widget.*", "visual": {"type": "widget"}, "counter": {"name": "reason", "to": "2/3"}, "mood": "happy"},
-    {"label": "// 02 — the widget", "say": "My habits live on my home screen, so I can't *pretend* I forgot.", "visual": "same", "counter": {"name": "reason", "to": "2/3"}, "mood": "smug"},
-    {"label": "// 03 — the stats", "say": "Three. The *stats.*", "visual": {"type": "stats"}, "counter": {"name": "reason", "to": "3/3"}, "mood": "happy"},
-    {"label": "// 03 — the stats", "say": "Turns out *Thursdays* are my weak spot. Now I plan for them.", "visual": "same", "counter": {"name": "reason", "to": "3/3"}, "mood": "serious"},
-    {"label": "// 04 — verdict", "theme": "dark", "say": "First habit app I've kept for more than a *month.*", "visual": {"type": "streak", "from": 0, "to": 38}, "counter": {"name": "streak", "from": 0, "to": 38}, "mood": "excited"},
-    {"label": "// 04 — verdict", "theme": "dark", "say": "Go try [Forma.]", "visual": {"type": "cta"}, "mood": "excited"}
+    {
+      "label": "// 00 — hook",
+      "say": "Three reasons I *finally* stuck with a habit app.",
+      "show": "3 reasons I *finally* stuck with a habit app.",
+      "visual": {
+        "type": "sticker",
+        "text": "3 REASONS",
+        "size": 140
+      },
+      "mood": "smug"
+    },
+    {
+      "label": "// 01 — simple",
+      "say": "One. It's *stupidly* simple.",
+      "visual": {
+        "type": "add",
+        "text": "🧘 Stretch 5 min"
+      },
+      "counter": {
+        "name": "reason",
+        "to": "1/3"
+      },
+      "mood": "happy"
+    },
+    {
+      "label": "// 01 — simple",
+      "say": "New habit, pick an emoji, done in *seconds.*",
+      "visual": "same",
+      "counter": {
+        "name": "setup",
+        "to": "4.2s"
+      },
+      "mood": "smug"
+    },
+    {
+      "label": "// 02 — your day",
+      "say": "Two. Habits are grouped by *time of day.*",
+      "visual": {
+        "type": "phone",
+        "checks": 0
+      },
+      "counter": {
+        "name": "reason",
+        "to": "2/3"
+      },
+      "mood": "happy"
+    },
+    {
+      "label": "// 02 — your day",
+      "say": "Morning, afternoon, evening. You just work *down the list.*",
+      "visual": {
+        "type": "phone"
+      },
+      "counter": {
+        "name": "reason",
+        "to": "2/3"
+      },
+      "mood": "smug"
+    },
+    {
+      "label": "// 03 — no strings",
+      "say": "Three. No account. Works *offline.*",
+      "visual": {
+        "type": "privacy"
+      },
+      "counter": {
+        "name": "reason",
+        "to": "3/3"
+      },
+      "mood": "happy"
+    },
+    {
+      "label": "// 03 — no strings",
+      "say": "And Pro is a *one-time* purchase. No subscription.",
+      "visual": {
+        "type": "compare"
+      },
+      "counter": {
+        "name": "reason",
+        "to": "3/3"
+      },
+      "mood": "excited"
+    },
+    {
+      "label": "// 04 — verdict",
+      "theme": "dark",
+      "say": "First habit app I've kept for more than a *month.*",
+      "visual": {
+        "type": "streak",
+        "from": 0,
+        "to": 38
+      },
+      "counter": {
+        "name": "streak",
+        "from": 0,
+        "to": 38
+      },
+      "mood": "excited"
+    },
+    {
+      "label": "// 04 — verdict",
+      "theme": "dark",
+      "say": "Go try [Forma.]",
+      "visual": {
+        "type": "cta"
+      },
+      "mood": "excited"
+    }
   ]
 }
